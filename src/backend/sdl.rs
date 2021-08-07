@@ -33,6 +33,7 @@ pub struct SDLBackend {
 
 impl SDLBackend {
     pub fn new() -> Result<Self> {
+        sdl2::hint::set("SDL_JOYSTICK_HIDAPI_PS4_RUMBLE", "1");
         let sdl = sdl2::init().unwrap();
         let game_controller_system = sdl.game_controller().unwrap();
         Ok(Self {
