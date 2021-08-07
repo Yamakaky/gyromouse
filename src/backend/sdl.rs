@@ -4,7 +4,7 @@ use std::{
     time::{Duration, Instant},
 };
 
-use anyhow::Result;
+use anyhow::{bail, Result};
 use cgmath::{vec2, vec3, Vector3};
 use hid_gamepad_types::{Acceleration, JoyKey, Motion, RotationSpeed};
 use sdl2::{
@@ -44,7 +44,20 @@ impl SDLBackend {
 
 impl Backend for SDLBackend {
     fn list_devices(&mut self) -> anyhow::Result<()> {
-        todo!()
+        let num_joysticks = match self.game_controller_system.num_joysticks() {
+            Ok(x) => x,
+            Err(e) => bail!("{}", e),
+        };
+        if num_joysticks == 0 {
+            println!("No controller detected");
+        } else {
+            println!("Detected controllers:");
+            for i in 0..num_joysticks {
+                let controller = self.game_controller_system.open(i)?;
+                println!(" - {}", controller.name());
+            }
+        }
+        Ok(())
     }
 
     fn run(
