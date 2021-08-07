@@ -54,12 +54,12 @@ fn main() -> anyhow::Result<()> {
         }
     };
 
+    let mut settings = Settings::default();
+    let mut bindings = Buttons::new();
     let mut mouse = Mouse::new();
 
     match opts.cmd {
         opts::Cmd::Validate(v) => {
-            let mut settings = Settings::default();
-            let mut bindings = Buttons::new();
             let mut content_file = File::open(&v.mapping_file)
                 .with_context(|| format!("opening config file {}", v.mapping_file))?;
             let content = {
@@ -72,8 +72,6 @@ fn main() -> anyhow::Result<()> {
         }
         opts::Cmd::FlickCalibrate => todo!(),
         opts::Cmd::Run(r) => {
-            let mut settings = Settings::default();
-            let mut bindings = Buttons::new();
             let mut content_file = File::open(&r.mapping_file)
                 .with_context(|| format!("opening config file {}", r.mapping_file))?;
             let content = {
