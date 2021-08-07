@@ -60,7 +60,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: vcpkg
-          args: --verbose build --manifest-path gyromouse/Cargo.toml
+          args: --verbose build
       #- name: dbg sdl
       #  if: matrix.platform == 'linux'
       #  run: |
