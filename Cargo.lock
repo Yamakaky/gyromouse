@@ -204,7 +204,7 @@ dependencies = [
 [[package]]
 name = "dualshock"
 version = "0.1.0"
-source = "git+https://github.com/Yamakaky/joy#202647a61681365f567f2025d7e83ae450cd95a9"
+source = "git+https://github.com/Yamakaky/joy#2691f8c655213672eb385adaae5a073353a0177c"
 dependencies = [
  "anyhow",
  "cgmath",
@@ -217,7 +217,7 @@ dependencies = [
 [[package]]
 name = "dualshock-sys"
 version = "0.1.0"
-source = "git+https://github.com/Yamakaky/joy#202647a61681365f567f2025d7e83ae450cd95a9"
+source = "git+https://github.com/Yamakaky/joy#2691f8c655213672eb385adaae5a073353a0177c"
 dependencies = [
  "bitfield",
  "cgmath",
@@ -333,7 +333,7 @@ checksum = "7f24254aa9a54b5c858eaee2f5bccdb46aaf0e486a595ed5fd8f86ba55232a70"
 [[package]]
 name = "hid-gamepad"
 version = "0.1.0"
-source = "git+https://github.com/Yamakaky/joy#202647a61681365f567f2025d7e83ae450cd95a9"
+source = "git+https://github.com/Yamakaky/joy#2691f8c655213672eb385adaae5a073353a0177c"
 dependencies = [
  "anyhow",
  "cgmath",
@@ -348,7 +348,7 @@ dependencies = [
 [[package]]
 name = "hid-gamepad-sys"
 version = "0.1.0"
-source = "git+https://github.com/Yamakaky/joy#202647a61681365f567f2025d7e83ae450cd95a9"
+source = "git+https://github.com/Yamakaky/joy#2691f8c655213672eb385adaae5a073353a0177c"
 dependencies = [
  "anyhow",
  "cgmath",
@@ -360,7 +360,7 @@ dependencies = [
 [[package]]
 name = "hid-gamepad-types"
 version = "0.1.0"
-source = "git+https://github.com/Yamakaky/joy#202647a61681365f567f2025d7e83ae450cd95a9"
+source = "git+https://github.com/Yamakaky/joy#2691f8c655213672eb385adaae5a073353a0177c"
 dependencies = [
  "cgmath",
  "enum-map",
@@ -417,7 +417,7 @@ checksum = "72167d68f5fce3b8655487b8038691a3c9984ee769590f93f2a631f4ad64e4f5"
 [[package]]
 name = "joycon"
 version = "0.1.0"
-source = "git+https://github.com/Yamakaky/joy#202647a61681365f567f2025d7e83ae450cd95a9"
+source = "git+https://github.com/Yamakaky/joy#2691f8c655213672eb385adaae5a073353a0177c"
 dependencies = [
  "anyhow",
  "cgmath",
@@ -433,7 +433,7 @@ dependencies = [
 [[package]]
 name = "joycon-sys"
 version = "0.1.0"
-source = "git+https://github.com/Yamakaky/joy#202647a61681365f567f2025d7e83ae450cd95a9"
+source = "git+https://github.com/Yamakaky/joy#2691f8c655213672eb385adaae5a073353a0177c"
 dependencies = [
  "bitfield",
  "cgmath",
@@ -478,9 +478,9 @@ dependencies = [
 
 [[package]]
 name = "memchr"
-version = "2.4.0"
+version = "2.3.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b16bd47d9e329435e309c58469fe0791c2d0d1ba96ec0954152a5ae2b04387dc"
+checksum = "0ee1c47aaa256ecabcaea351eae4a9b01ef39ed810004e298d2511ed284b1525"
 
 [[package]]
 name = "miniz_oxide"
@@ -493,9 +493,9 @@ dependencies = [
 
 [[package]]
 name = "nom"
-version = "6.1.2"
+version = "6.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e7413f999671bd4745a7b624bd370a569fb6bc574b23c83a3c5ed2e453f3d5e2"
+checksum = "9c5c51b9083a3c620fa67a2a635d1ce7d95b897e957d6b28ff9a5da960a103a6"
 dependencies = [
  "bitvec",
  "funty",

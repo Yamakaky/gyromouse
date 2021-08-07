@@ -19,7 +19,7 @@ enum-map = "0.6"
 hid-gamepad-types = { git = "https://github.com/Yamakaky/joy" }
 hid-gamepad = { git = "https://github.com/Yamakaky/joy", optional = true }
 joycon = { git = "https://github.com/Yamakaky/joy", optional = true }
-nom = "6.0"
+nom = "6.2"
 nom_locate = "3.0"
 nom-supreme = "0.4"
 
