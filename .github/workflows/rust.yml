@@ -34,15 +34,9 @@ jobs:
       - uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
-      - uses: actions/cache@v2
-        id: cache-cargo
+      - uses: Swatinem/rust-cache@v1
         with:
-          path: |
-            ~/.cargo/registry/index/
-            ~/.cargo/registry/cache/
-            ~/.cargo/git/db/
-            target
-          key: ${{ runner.os }}-cargo-v1-${{ hashFiles('**/Cargo.lock') }}
+          key: v1
       - uses: actions/cache@v2
         id: cache-cargo-bin
         with:
