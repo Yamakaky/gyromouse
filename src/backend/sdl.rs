@@ -6,7 +6,7 @@ use std::{
 
 use anyhow::Result;
 use cgmath::{vec2, vec3, Vector3};
-use hid_gamepad_types::JoyKey;
+use hid_gamepad_types::{Acceleration, JoyKey, Motion, RotationSpeed};
 use sdl2::{
     self,
     controller::{Axis, Button, GameController},
@@ -17,7 +17,10 @@ use sdl2::{
 };
 
 use crate::{
-    calibration::Calibration, config::settings::Settings, engine::Engine, mapping::Buttons,
+    calibration::{BetterCalibration, Calibration},
+    config::settings::Settings,
+    engine::Engine,
+    mapping::Buttons,
     mouse::Mouse,
 };
 
@@ -69,11 +72,25 @@ impl Backend for SDLBackend {
                         ..
                     } => break 'running,
                     Event::ControllerDeviceAdded { which, .. } => {
-                        let controller = self.game_controller_system.open(which)?;
+                        let mut controller = self.game_controller_system.open(which)?;
+
+                        println!("New controller: {}", controller.name());
 
                         // Ignore errors, handled later
-                        let _ = controller.sensor_set_enabled(SensorType::Accelerometer, true);
-                        let _ = controller.sensor_set_enabled(SensorType::Gyroscope, true);
+                        let calibrator = if controller
+                            .sensor_set_enabled(SensorType::Accelerometer, true)
+                            .and(controller.sensor_set_enabled(SensorType::Gyroscope, true))
+                            .is_ok()
+                        {
+                            println!(
+                                "Starting calibration for {}, don't move the controller...",
+                                controller.name()
+                            );
+                            Some(BetterCalibration::default())
+                        } else {
+                            let _ = controller.set_rumble(220, 440, 100);
+                            None
+                        };
 
                         let engine = Engine::new(
                             settings.clone(),
@@ -81,10 +98,19 @@ impl Backend for SDLBackend {
                             Calibration::empty(),
                             mouse.clone(),
                         );
-                        controllers.insert(which, ControllerState { controller, engine });
+                        controllers.insert(
+                            which,
+                            ControllerState {
+                                controller,
+                                engine,
+                                calibrator,
+                            },
+                        );
                     }
                     Event::ControllerDeviceRemoved { which, .. } => {
-                        controllers.remove(&which);
+                        if let Some(controller) = controllers.remove(&which) {
+                            println!("Controller disconnected: {}", controller.controller.name());
+                        }
                     }
                     Event::ControllerButtonDown {
                         timestamp: _,
@@ -127,14 +153,33 @@ impl Backend for SDLBackend {
                 {
                     let mut accel = [0.; 3];
                     c.sensor_get_data(SensorType::Accelerometer, &mut accel)?;
-                    let accel = Vector3::from(accel).cast::<f64>().unwrap() / 9.82;
+                    let acceleration =
+                        Acceleration::from(Vector3::from(accel).cast::<f64>().unwrap() / 9.82);
                     let mut gyro = [0.; 3];
                     c.sensor_get_data(SensorType::Gyroscope, &mut gyro)?;
-                    let gyro = vec3(gyro[0] as f64, gyro[1] as f64, gyro[2] as f64)
-                        / std::f64::consts::PI
-                        * 180.;
+                    let rotation_speed = RotationSpeed::from(
+                        vec3(gyro[0] as f64, gyro[1] as f64, gyro[2] as f64) / std::f64::consts::PI
+                            * 180.,
+                    );
 
-                    engine.apply_motion(gyro.into(), accel.into(), dt);
+                    if let Some(ref mut calibrator) = controller.calibrator {
+                        let finished = calibrator.push(
+                            Motion {
+                                rotation_speed,
+                                acceleration,
+                            },
+                            now,
+                            Duration::from_secs(2),
+                        );
+                        if finished {
+                            println!("Calibration finished for {}", c.name());
+                            let _ = c.set_rumble(220, 440, 100);
+                            engine.set_calibration(calibrator.finish());
+                            controller.calibrator = None;
+                        }
+                    } else {
+                        engine.apply_motion(rotation_speed, acceleration, dt);
+                    }
                 }
                 engine.apply_actions(now);
             }
@@ -150,6 +195,7 @@ impl Backend for SDLBackend {
 struct ControllerState {
     controller: GameController,
     engine: Engine,
+    calibrator: Option<BetterCalibration>,
 }
 
 fn sdl_to_sys(button: Button) -> JoyKey {

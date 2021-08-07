@@ -71,7 +71,7 @@ impl Default for SimpleCalibration {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub struct BetterCalibration {
     last_sum: Vector3<f64>,
     last_count: u64,
@@ -80,7 +80,7 @@ pub struct BetterCalibration {
     state: BetterCalibrationState,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 enum BetterCalibrationState {
     Moving,
     Static {

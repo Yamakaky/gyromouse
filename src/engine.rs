@@ -48,6 +48,7 @@ impl Engine {
         }
     }
 
+    #[allow(dead_code)]
     pub fn tick(&mut self, report: Report) -> anyhow::Result<()> {
         let now = Instant::now();
 
@@ -115,6 +116,10 @@ impl Engine {
             &mut self.mouse,
             dt,
         )
+    }
+
+    pub fn set_calibration(&mut self, calibration: Calibration) {
+        self.gyro.calibration = calibration;
     }
 }
 
