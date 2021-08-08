@@ -29,6 +29,7 @@ use super::Backend;
 pub struct SDLBackend {
     sdl: Sdl,
     game_controller_system: GameControllerSubsystem,
+    mouse: Mouse,
 }
 
 impl SDLBackend {
@@ -39,6 +40,7 @@ impl SDLBackend {
         Ok(Self {
             sdl,
             game_controller_system,
+            mouse: Mouse::new(),
         })
     }
 }
@@ -66,7 +68,6 @@ impl Backend for SDLBackend {
         _opts: crate::opts::Run,
         settings: Settings,
         bindings: Buttons,
-        mouse: Mouse,
     ) -> anyhow::Result<()> {
         let mut event_pump = self.sdl.event_pump().unwrap();
 
@@ -110,7 +111,7 @@ impl Backend for SDLBackend {
                             settings.clone(),
                             bindings.clone(),
                             Calibration::empty(),
-                            mouse.clone(),
+                            self.mouse.clone(),
                         );
                         controllers.insert(
                             which,

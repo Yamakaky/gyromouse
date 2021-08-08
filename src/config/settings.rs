@@ -17,6 +17,7 @@ pub struct Settings {
     pub trigger_threshold: f64,
     pub zl_mode: TriggerMode,
     pub zr_mode: TriggerMode,
+    pub mouse: MouseSettings,
 }
 
 impl Default for Settings {
@@ -31,6 +32,7 @@ impl Default for Settings {
             trigger_threshold: 0.5,
             zl_mode: TriggerMode::NoFull,
             zr_mode: TriggerMode::NoFull,
+            mouse: MouseSettings::default(),
         }
     }
 }
@@ -47,6 +49,7 @@ impl Settings {
             Setting::TriggerThreshold(t) => self.trigger_threshold = t,
             Setting::ZLMode(m) => self.zl_mode = m,
             Setting::ZRMode(m) => self.zr_mode = m,
+            Setting::Mouse(m) => self.mouse.apply(m),
         }
     }
 
@@ -253,6 +256,36 @@ impl GyroSettings {
             GyroSetting::CutoffRecovery(s) => self.cutoff_recovery = s,
             GyroSetting::SmoothThreshold(s) => self.smooth_threshold = s,
             GyroSetting::SmoothTime(s) => self.smooth_time = s,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy)]
+pub struct MouseSettings {
+    pub counter_os_speed: bool,
+    pub real_world_calibration: f64,
+    pub in_game_sens: f64,
+}
+
+impl Default for MouseSettings {
+    fn default() -> Self {
+        Self {
+            counter_os_speed: false,
+            real_world_calibration: 1.,
+            in_game_sens: 1.,
+        }
+    }
+}
+
+impl MouseSettings {
+    fn apply(&mut self, setting: MouseSetting) {
+        match setting {
+            MouseSetting::CounterOSSpeed(c) => {
+                println!("Warning: counter os speed not supported");
+                self.counter_os_speed = c;
+            }
+            MouseSetting::RealWorldCalibration(c) => self.real_world_calibration = c,
+            MouseSetting::InGameSens(s) => self.in_game_sens = s,
         }
     }
 }

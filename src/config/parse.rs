@@ -24,7 +24,6 @@ use nom_supreme::{
 
 use crate::{
     mapping::{Action, Buttons, Layer, MapKey, VirtualKey},
-    mouse::Mouse,
     ClickType,
 };
 
@@ -97,7 +96,6 @@ pub fn parse_file<'a>(
     content: &'a str,
     settings: &mut Settings,
     mapping: &mut Buttons,
-    mouse: &mut Mouse,
 ) -> anyhow::Result<()> {
     for cmd in jsm_parse(content)? {
         match cmd {
@@ -114,9 +112,6 @@ pub fn parse_file<'a>(
                 settings.reset();
                 mapping.reset()
             }
-            Cmd::RealWorldCalibration(c) => mouse.set_calibration(c),
-            Cmd::InGameSens(c) => mouse.set_game_sens(c),
-            Cmd::CounterOSMouseSpeed(c) => mouse.set_counter_os_speed(c),
             Cmd::Special(_) => unimplemented!(),
         }
     }
@@ -194,6 +189,7 @@ fn setting(input: Input) -> IRes<'_, Setting> {
         gyro_setting,
         ring_mode,
         map(stick_setting, Setting::Stick),
+        map(mouse_setting, Setting::Mouse),
     ))(input)
 }
 
@@ -355,6 +351,16 @@ fn trigger_mode(input: Input) -> IRes<'_, Setting> {
         Ok((input, Setting::ZLMode(mode)))
     }
 }
+fn mouse_setting(input: Input) -> IRes<MouseSetting> {
+    Ok(alt((
+        f64_setting("REAL_WORLD_CALIBRATION", MouseSetting::RealWorldCalibration),
+        f64_setting("IN_GAME_SENS", MouseSetting::InGameSens),
+        value(
+            MouseSetting::CounterOSSpeed(true),
+            tag_no_case("COUNTER_OS_MOUSE_SPEED"),
+        ),
+    ))(input)?)
+}
 
 fn equal_with_space(input: Input) -> IRes<'_, ()> {
     let (input, _) = space0(input)?;
@@ -369,12 +375,6 @@ fn cmd(input: Input) -> IRes<'_, Cmd> {
         map(special, Cmd::Special),
         map(setting, Cmd::Setting),
         value(Cmd::Reset, tag_no_case("RESET_MAPPINGS")),
-        f64_setting("REAL_WORLD_CALIBRATION", Cmd::RealWorldCalibration),
-        f64_setting("IN_GAME_SENS", Cmd::InGameSens),
-        value(
-            Cmd::CounterOSMouseSpeed(true),
-            tag_no_case("COUNTER_OS_MOUSE_SPEED"),
-        ),
     ))(input)
 }
 

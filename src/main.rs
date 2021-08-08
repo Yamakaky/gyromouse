@@ -18,7 +18,7 @@ use backend::Backend;
 use clap::Clap;
 use opts::Opts;
 
-use crate::{config::settings::Settings, mapping::Buttons, mouse::Mouse};
+use crate::{config::settings::Settings, mapping::Buttons};
 
 #[derive(Debug, Copy, Clone)]
 pub enum ClickType {
@@ -56,7 +56,6 @@ fn main() -> anyhow::Result<()> {
 
     let mut settings = Settings::default();
     let mut bindings = Buttons::new();
-    let mut mouse = Mouse::new();
 
     match opts.cmd {
         opts::Cmd::Validate(v) => {
@@ -67,7 +66,7 @@ fn main() -> anyhow::Result<()> {
                 content_file.read_to_string(&mut buf)?;
                 buf
             };
-            config::parse::parse_file(&content, &mut settings, &mut bindings, &mut mouse)?;
+            config::parse::parse_file(&content, &mut settings, &mut bindings)?;
             Ok(())
         }
         opts::Cmd::FlickCalibrate => todo!(),
@@ -79,8 +78,8 @@ fn main() -> anyhow::Result<()> {
                 content_file.read_to_string(&mut buf)?;
                 buf
             };
-            config::parse::parse_file(&content, &mut settings, &mut bindings, &mut mouse)?;
-            backend.run(r, settings, bindings, mouse)
+            config::parse::parse_file(&content, &mut settings, &mut bindings)?;
+            backend.run(r, settings, bindings)
         }
         opts::Cmd::List => backend.list_devices(),
     }

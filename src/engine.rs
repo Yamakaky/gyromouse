@@ -10,10 +10,7 @@ use hid_gamepad_types::{Acceleration, JoyKey, KeyStatus, Motion, Report, Rotatio
 
 use crate::{
     calibration::Calibration,
-    config::{
-        settings::{GyroSettings, Settings},
-        types::GyroSpace,
-    },
+    config::{settings::Settings, types::GyroSpace},
     gyromouse::GyroMouse,
     joystick::Stick,
     mapping::{Buttons, ExtAction},
@@ -68,7 +65,7 @@ impl Engine {
         // dt of the entire report time
         let dt = Duration::from_secs_f64(1. / report.frequency as f64 * report.motion.len() as f64);
         self.gyro
-            .handle_frame(&self.settings.gyro, &report.motion, &mut self.mouse, dt);
+            .handle_frame(&self.settings, &report.motion, &mut self.mouse, dt);
         Ok(())
     }
 
@@ -79,7 +76,7 @@ impl Engine {
     pub fn handle_left_stick(&mut self, stick: Vector2<f64>, now: Instant) {
         self.left_stick.handle(
             stick,
-            &self.settings.stick_settings,
+            &self.settings,
             &mut self.buttons,
             &mut self.mouse,
             now,
@@ -89,7 +86,7 @@ impl Engine {
     pub fn handle_right_stick(&mut self, stick: Vector2<f64>, now: Instant) {
         self.right_stick.handle(
             stick,
-            &self.settings.stick_settings,
+            &self.settings,
             &mut self.buttons,
             &mut self.mouse,
             now,
@@ -125,7 +122,7 @@ impl Engine {
         dt: Duration,
     ) {
         self.gyro.handle_frame(
-            &self.settings.gyro,
+            &self.settings,
             &[Motion {
                 rotation_speed,
                 acceleration,
@@ -166,12 +163,12 @@ impl Gyro {
     }
     pub fn handle_frame(
         &mut self,
-        settings: &GyroSettings,
+        settings: &Settings,
         motions: &[Motion],
         mouse: &mut Mouse,
         dt: Duration,
     ) {
-        const SMOOTH_RATE: bool = false;
+        const SMOOTH_RATE: bool = true;
         let mut delta_position = Vector2::zero();
         let dt = dt / motions.len() as u32;
         for (i, frame) in motions.iter().cloned().enumerate() {
@@ -182,17 +179,17 @@ impl Gyro {
                 self.sensor_fusion.deref_mut(),
                 self.space_mapper.deref_mut(),
             );
-            let offset = self.gyromouse.process(settings, delta, dt);
+            let offset = self.gyromouse.process(&settings.gyro, delta, dt);
             delta_position += offset;
             if self.enabled && !SMOOTH_RATE {
                 if i > 0 {
                     std::thread::sleep(dt);
                 }
-                mouse.mouse_move_relative(offset);
+                mouse.mouse_move_relative(&settings.mouse, offset);
             }
         }
         if self.enabled && SMOOTH_RATE {
-            mouse.mouse_move_relative(delta_position);
+            mouse.mouse_move_relative(&settings.mouse, delta_position);
         }
     }
 }

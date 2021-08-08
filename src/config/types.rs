@@ -135,6 +135,13 @@ pub enum GyroSetting {
 }
 
 #[derive(Debug, Copy, Clone)]
+pub enum MouseSetting {
+    CounterOSSpeed(bool),
+    RealWorldCalibration(f64),
+    InGameSens(f64),
+}
+
+#[derive(Debug, Copy, Clone)]
 pub enum GyroSpace {
     Local,
     WorldTurn,
@@ -154,6 +161,7 @@ pub enum Setting {
     LeftRingMode(RingMode),
     RightRingMode(RingMode),
     Stick(StickSetting),
+    Mouse(MouseSetting),
 }
 
 #[derive(Debug, Clone)]
@@ -162,9 +170,6 @@ pub enum Cmd {
     Special(SpecialKey),
     Setting(Setting),
     Reset,
-    RealWorldCalibration(f64),
-    InGameSens(f64),
-    CounterOSMouseSpeed(bool),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
