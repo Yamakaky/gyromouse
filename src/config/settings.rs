@@ -199,12 +199,24 @@ impl ScrollStickSettings {
 
 #[derive(Debug, Clone, Copy)]
 pub struct GyroSettings {
+    /// Sensitivity to use without acceleration.
+    ///
+    /// <http://gyrowiki.jibbsmart.com/blog:good-gyro-controls-part-1:the-gyro-is-a-mouse#toc5>
     pub sens: f64,
     pub space: GyroSpace,
+    /// Stabilize slow movements
+    ///
+    /// <http://gyrowiki.jibbsmart.com/blog:good-gyro-controls-part-1:the-gyro-is-a-mouse#toc9>
     pub cutoff_speed: f64,
     pub cutoff_recovery: f64,
+    /// Smoothing threshold.
+    ///
+    /// Rotations smaller than this will be smoothed over a small period of time.
     pub smooth_threshold: f64,
     pub smooth_time: Duration,
+    /// Enables acceleration.
+    ///
+    /// <http://gyrowiki.jibbsmart.com/blog:good-gyro-controls-part-1:the-gyro-is-a-mouse#toc7>
     pub slow_threshold: f64,
     pub slow_sens: f64,
     pub fast_threshold: f64,

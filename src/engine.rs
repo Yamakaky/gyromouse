@@ -10,7 +10,10 @@ use hid_gamepad_types::{Acceleration, JoyKey, KeyStatus, Motion, Report, Rotatio
 
 use crate::{
     calibration::Calibration,
-    config::{settings::Settings, types::GyroSpace},
+    config::{
+        settings::{GyroSettings, Settings},
+        types::GyroSpace,
+    },
     gyromouse::GyroMouse,
     joystick::Stick,
     mapping::{Buttons, ExtAction},
@@ -64,7 +67,8 @@ impl Engine {
 
         // dt of the entire report time
         let dt = Duration::from_secs_f64(1. / report.frequency as f64 * report.motion.len() as f64);
-        self.gyro.handle_frame(&report.motion, &mut self.mouse, dt);
+        self.gyro
+            .handle_frame(&self.settings.gyro, &report.motion, &mut self.mouse, dt);
         Ok(())
     }
 
@@ -121,6 +125,7 @@ impl Engine {
         dt: Duration,
     ) {
         self.gyro.handle_frame(
+            &self.settings.gyro,
             &[Motion {
                 rotation_speed,
                 acceleration,
@@ -156,10 +161,16 @@ impl Gyro {
                 GyroSpace::PlayerTurn => Box::new(PlayerSpace::default()),
                 GyroSpace::PlayerLean => todo!(),
             },
-            gyromouse: GyroMouse::from(settings.gyro),
+            gyromouse: GyroMouse::default(),
         }
     }
-    pub fn handle_frame(&mut self, motions: &[Motion], mouse: &mut Mouse, dt: Duration) {
+    pub fn handle_frame(
+        &mut self,
+        settings: &GyroSettings,
+        motions: &[Motion],
+        mouse: &mut Mouse,
+        dt: Duration,
+    ) {
         const SMOOTH_RATE: bool = false;
         let mut delta_position = Vector2::zero();
         let dt = dt / motions.len() as u32;
@@ -171,7 +182,7 @@ impl Gyro {
                 self.sensor_fusion.deref_mut(),
                 self.space_mapper.deref_mut(),
             );
-            let offset = self.gyromouse.process(delta, dt);
+            let offset = self.gyromouse.process(settings, delta, dt);
             delta_position += offset;
             if self.enabled && !SMOOTH_RATE {
                 if i > 0 {
