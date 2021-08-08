@@ -22,6 +22,7 @@ use crate::{
 };
 
 pub struct Engine {
+    settings: Settings,
     left_stick: Box<dyn Stick>,
     right_stick: Box<dyn Stick>,
     buttons: Buttons,
@@ -43,8 +44,9 @@ impl Engine {
             right_stick: settings.new_right_stick(),
             buttons,
             mouse,
-            gyro: Gyro::new(settings, calibration),
+            gyro: Gyro::new(&settings, calibration),
             last_keys: EnumMap::default(),
+            settings,
         }
     }
 
@@ -71,13 +73,23 @@ impl Engine {
     }
 
     pub fn handle_left_stick(&mut self, stick: Vector2<f64>, now: Instant) {
-        self.left_stick
-            .handle(stick, &mut self.buttons, &mut self.mouse, now);
+        self.left_stick.handle(
+            stick,
+            &self.settings.stick_settings,
+            &mut self.buttons,
+            &mut self.mouse,
+            now,
+        );
     }
 
     pub fn handle_right_stick(&mut self, stick: Vector2<f64>, now: Instant) {
-        self.right_stick
-            .handle(stick, &mut self.buttons, &mut self.mouse, now);
+        self.right_stick.handle(
+            stick,
+            &self.settings.stick_settings,
+            &mut self.buttons,
+            &mut self.mouse,
+            now,
+        );
     }
 
     pub fn apply_actions(&mut self, now: Instant) {
@@ -132,7 +144,7 @@ pub struct Gyro {
 }
 
 impl Gyro {
-    pub fn new(settings: Settings, calibration: Calibration) -> Gyro {
+    pub fn new(settings: &Settings, calibration: Calibration) -> Gyro {
         Gyro {
             enabled: true,
             calibration,

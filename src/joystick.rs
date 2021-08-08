@@ -1,11 +1,11 @@
 #![allow(dead_code)]
 
-use std::time::{Duration, Instant};
+use std::time::Instant;
 
 use cgmath::{vec2, AbsDiffEq, Angle, Deg, InnerSpace, Rad, Vector2};
 
 use crate::{
-    config::{settings::FlickStickSettings, types::RingMode},
+    config::{settings::StickSettings, types::RingMode},
     mapping::{Buttons, VirtualKey},
     mouse::Mouse,
 };
@@ -14,6 +14,7 @@ pub trait Stick {
     fn handle(
         &mut self,
         stick: Vector2<f64>,
+        settings: &StickSettings,
         bindings: &mut Buttons,
         mouse: &mut Mouse,
         now: Instant,
@@ -21,26 +22,12 @@ pub trait Stick {
 }
 
 pub struct CameraStick {
-    deadzone: f64,
-    fullzone: f64,
-    sens_pps: f64,
-    exp: f64,
-    acceleration: f64,
-    max_speed: f64,
     current_speed: f64,
 }
 
 impl Default for CameraStick {
     fn default() -> Self {
-        CameraStick {
-            deadzone: 0.15,
-            fullzone: 0.9,
-            sens_pps: 1000.,
-            exp: 2.,
-            acceleration: 0.,
-            max_speed: 10.,
-            current_speed: 0.,
-        }
+        CameraStick { current_speed: 0. }
     }
 }
 
@@ -48,21 +35,26 @@ impl Stick for CameraStick {
     fn handle(
         &mut self,
         stick: Vector2<f64>,
+        settings: &StickSettings,
         _bindings: &mut Buttons,
         mouse: &mut Mouse,
         _now: Instant,
     ) {
+        // TODO: use dt instead of fixed rate 66Hz
         let amp = stick.magnitude();
-        let amp_zones = (amp - self.deadzone) / (self.fullzone - self.deadzone);
+        let amp_zones = (amp - settings.deadzone) / (settings.fullzone - settings.deadzone);
         if amp_zones >= 1. {
-            self.current_speed = (self.current_speed + self.acceleration / 66.).min(self.max_speed);
+            self.current_speed = (self.current_speed + settings.aim_stick.acceleration_rate / 66.)
+                .min(settings.aim_stick.acceleration_cap);
         } else {
             self.current_speed = 0.;
         }
         let amp_clamped = amp_zones.max(0.).min(1.);
-        let amp_exp = amp_clamped.powf(self.exp);
+        let amp_exp = amp_clamped.powf(settings.aim_stick.power);
         mouse.mouse_move_relative(
-            self.sens_pps / 66. * (1. + self.current_speed) * stick.normalize_to(amp_exp),
+            settings.aim_stick.sens_dps / 66.
+                * (1. + self.current_speed)
+                * stick.normalize_to(amp_exp),
         );
     }
 }
@@ -82,8 +74,6 @@ enum FlickStickState {
 
 #[derive(Debug)]
 pub struct FlickStick {
-    flick_time: Duration,
-    threshold: f64,
     state: FlickStickState,
     do_rotate: bool,
     do_flick: bool,
@@ -92,8 +82,6 @@ pub struct FlickStick {
 impl Default for FlickStick {
     fn default() -> Self {
         FlickStick {
-            flick_time: Duration::from_millis(200),
-            threshold: 0.6,
             state: FlickStickState::Center,
             do_rotate: true,
             do_flick: true,
@@ -102,10 +90,8 @@ impl Default for FlickStick {
 }
 
 impl FlickStick {
-    pub fn new(settings: &FlickStickSettings, threshold: f64, flick: bool, rotate: bool) -> Self {
+    pub fn new(flick: bool, rotate: bool) -> Self {
         Self {
-            flick_time: settings.flick_time,
-            threshold,
             state: FlickStickState::Center,
             do_rotate: rotate,
             do_flick: flick,
@@ -117,13 +103,14 @@ impl Stick for FlickStick {
     fn handle(
         &mut self,
         stick: Vector2<f64>,
+        settings: &StickSettings,
         _bindings: &mut Buttons,
         mouse: &mut Mouse,
         now: Instant,
     ) {
         let offset = match self.state {
             FlickStickState::Center | FlickStickState::Rotating { .. }
-                if stick.magnitude() < self.threshold =>
+                if stick.magnitude() < settings.fullzone =>
             {
                 self.state = FlickStickState::Center;
                 None
@@ -149,7 +136,7 @@ impl Stick for FlickStick {
                 target,
             } => {
                 let elapsed = now.duration_since(flick_start).as_secs_f64();
-                let max = self.flick_time.as_secs_f64() * target.0.abs() / 180.;
+                let max = settings.flick_stick.flick_time.as_secs_f64() * target.0.abs() / 180.;
                 let dt_factor = elapsed / max;
                 let current_angle = target * dt_factor.min(1.);
                 let delta = current_angle - *last;
@@ -176,14 +163,12 @@ impl Stick for FlickStick {
             }
         };
         if let Some(offset) = offset {
-            mouse.mouse_move_relative(vec2(offset.0, 0.) * 25.);
+            mouse.mouse_move_relative(vec2(offset.0, 0.));
         }
     }
 }
 
 pub struct ButtonStick {
-    deadzone: f64,
-    fullzone: f64,
     left: bool,
     angle: Deg<f64>,
     ring_mode: RingMode,
@@ -192,8 +177,6 @@ pub struct ButtonStick {
 impl ButtonStick {
     pub fn left(ring_mode: RingMode) -> Self {
         Self {
-            deadzone: 0.15,
-            fullzone: 0.9,
             left: true,
             angle: Deg(30.),
             ring_mode,
@@ -202,8 +185,6 @@ impl ButtonStick {
 
     pub fn right(ring_mode: RingMode) -> Self {
         Self {
-            deadzone: 0.15,
-            fullzone: 0.9,
             left: false,
             angle: Deg(30.),
             ring_mode,
@@ -215,12 +196,13 @@ impl Stick for ButtonStick {
     fn handle(
         &mut self,
         stick: Vector2<f64>,
+        settings: &StickSettings,
         bindings: &mut Buttons,
         _mouse: &mut Mouse,
         _now: Instant,
     ) {
         let amp = stick.magnitude();
-        let amp_zones = (amp - self.deadzone) / (self.fullzone - self.deadzone);
+        let amp_zones = (amp - settings.deadzone) / (settings.fullzone - settings.deadzone);
         let amp_clamped = amp_zones.max(0.).min(1.);
         let stick = stick.normalize_to(amp_clamped);
         let now = std::time::Instant::now();

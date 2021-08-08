@@ -68,12 +68,7 @@ impl Settings {
             StickMode::Flick | StickMode::FlickOnly | StickMode::RotateOnly => {
                 let flick = mode != StickMode::RotateOnly;
                 let rotate = mode != StickMode::FlickOnly;
-                Box::new(FlickStick::new(
-                    &self.stick_settings.flick_stick,
-                    self.stick_settings.deadzone,
-                    flick,
-                    rotate,
-                ))
+                Box::new(FlickStick::new(flick, rotate))
             }
             StickMode::MouseRing => todo!(),
             StickMode::MouseArea => todo!(),
@@ -122,7 +117,7 @@ impl StickSettings {
 
 #[derive(Debug, Clone)]
 pub struct AimStickSettings {
-    pub sens: f64,
+    pub sens_dps: f64,
     pub power: f64,
     pub invert_x: bool,
     pub invert_y: bool,
@@ -133,7 +128,7 @@ pub struct AimStickSettings {
 impl Default for AimStickSettings {
     fn default() -> Self {
         Self {
-            sens: 360.,
+            sens_dps: 360.,
             power: 1.,
             invert_x: false,
             invert_y: false,
@@ -146,7 +141,7 @@ impl Default for AimStickSettings {
 impl AimStickSettings {
     fn apply(&mut self, setting: AimStickSetting) {
         match setting {
-            AimStickSetting::Sens(s) => self.sens = s,
+            AimStickSetting::Sens(s) => self.sens_dps = s,
             AimStickSetting::Power(s) => self.power = s,
             AimStickSetting::InvertX(v) => self.invert_x = v,
             AimStickSetting::InvertY(v) => self.invert_y = v,
