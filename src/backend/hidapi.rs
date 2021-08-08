@@ -6,7 +6,9 @@ use crate::{
 };
 
 use anyhow::{bail, Result};
+use enum_map::EnumMap;
 use hid_gamepad::sys::GamepadDevice;
+use hid_gamepad_types::{JoyKey, KeyStatus};
 use joycon::{
     hidapi::HidApi,
     joycon_sys::{
@@ -90,8 +92,62 @@ fn hid_main(gamepad: &mut dyn GamepadDevice, settings: Settings, bindings: Butto
     println!("calibrating done");
     let mut engine = Engine::new(settings, bindings, calibrator.finish(), Mouse::new());
 
+    let mut last_keys = EnumMap::default();
     loop {
         let report = gamepad.recv()?;
-        engine.tick(report)?;
+        let now = Instant::now();
+
+        diff(engine.buttons(), now, &last_keys, &report.keys);
+        last_keys = report.keys;
+
+        engine.handle_left_stick(report.left_joystick, now);
+        engine.handle_right_stick(report.right_joystick, now);
+
+        engine.apply_actions(now);
+
+        let dt = Duration::from_secs_f64(1. / report.frequency as f64 * report.motion.len() as f64);
+        engine.handle_motion_frame(&report.motion, dt);
     }
+}
+
+macro_rules! diff {
+    ($mapping:ident, $now:ident, $old:expr, $new:expr, $key:ident) => {
+        match ($old[$key], $new[$key]) {
+            (KeyStatus::Released, KeyStatus::Pressed) => $mapping.key_down($key, $now),
+            (KeyStatus::Pressed, KeyStatus::Released) => $mapping.key_up($key, $now),
+            _ => (),
+        }
+    };
+}
+
+fn diff(
+    mapping: &mut Buttons,
+    now: Instant,
+    old: &EnumMap<JoyKey, KeyStatus>,
+    new: &EnumMap<JoyKey, KeyStatus>,
+) {
+    use hid_gamepad_types::JoyKey::*;
+
+    diff!(mapping, now, old, new, Up);
+    diff!(mapping, now, old, new, Down);
+    diff!(mapping, now, old, new, Left);
+    diff!(mapping, now, old, new, Right);
+    diff!(mapping, now, old, new, L);
+    diff!(mapping, now, old, new, ZL);
+    diff!(mapping, now, old, new, SL);
+    diff!(mapping, now, old, new, SR);
+    diff!(mapping, now, old, new, L3);
+    diff!(mapping, now, old, new, R3);
+    diff!(mapping, now, old, new, Minus);
+    diff!(mapping, now, old, new, Plus);
+    diff!(mapping, now, old, new, Capture);
+    diff!(mapping, now, old, new, Home);
+    diff!(mapping, now, old, new, W);
+    diff!(mapping, now, old, new, N);
+    diff!(mapping, now, old, new, S);
+    diff!(mapping, now, old, new, E);
+    diff!(mapping, now, old, new, R);
+    diff!(mapping, now, old, new, ZR);
+    diff!(mapping, now, old, new, SL);
+    diff!(mapping, now, old, new, SR);
 }

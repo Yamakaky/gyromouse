@@ -5,8 +5,7 @@ use std::{
 
 use cgmath::{Vector2, Zero};
 use enigo::{KeyboardControllable, MouseControllable};
-use enum_map::EnumMap;
-use hid_gamepad_types::{Acceleration, JoyKey, KeyStatus, Motion, Report, RotationSpeed};
+use hid_gamepad_types::{Acceleration, Motion, RotationSpeed};
 
 use crate::{
     calibration::Calibration,
@@ -28,8 +27,6 @@ pub struct Engine {
     buttons: Buttons,
     mouse: Mouse,
     gyro: Gyro,
-
-    last_keys: EnumMap<JoyKey, KeyStatus>,
 }
 
 impl Engine {
@@ -45,28 +42,8 @@ impl Engine {
             buttons,
             mouse,
             gyro: Gyro::new(&settings, calibration),
-            last_keys: EnumMap::default(),
             settings,
         }
-    }
-
-    #[allow(dead_code)]
-    pub fn tick(&mut self, report: Report) -> anyhow::Result<()> {
-        let now = Instant::now();
-
-        diff(&mut self.buttons, now, &self.last_keys, &report.keys);
-        self.last_keys = report.keys;
-
-        self.handle_left_stick(report.left_joystick, now);
-        self.handle_right_stick(report.right_joystick, now);
-
-        self.apply_actions(now);
-
-        // dt of the entire report time
-        let dt = Duration::from_secs_f64(1. / report.frequency as f64 * report.motion.len() as f64);
-        self.gyro
-            .handle_frame(&self.settings, &report.motion, &mut self.mouse, dt);
-        Ok(())
     }
 
     pub fn buttons(&mut self) -> &mut Buttons {
@@ -121,15 +98,18 @@ impl Engine {
         acceleration: Acceleration,
         dt: Duration,
     ) {
-        self.gyro.handle_frame(
-            &self.settings,
+        self.handle_motion_frame(
             &[Motion {
                 rotation_speed,
                 acceleration,
             }],
-            &mut self.mouse,
             dt,
         )
+    }
+
+    pub fn handle_motion_frame(&mut self, motions: &[Motion], dt: Duration) {
+        self.gyro
+            .handle_frame(&self.settings, motions, &mut self.mouse, dt)
     }
 
     pub fn set_calibration(&mut self, calibration: Calibration) {
@@ -161,6 +141,7 @@ impl Gyro {
             gyromouse: GyroMouse::default(),
         }
     }
+
     pub fn handle_frame(
         &mut self,
         settings: &Settings,
@@ -192,46 +173,4 @@ impl Gyro {
             mouse.mouse_move_relative(&settings.mouse, delta_position);
         }
     }
-}
-
-macro_rules! diff {
-    ($mapping:ident, $now:ident, $old:expr, $new:expr, $key:ident) => {
-        match ($old[$key], $new[$key]) {
-            (KeyStatus::Released, KeyStatus::Pressed) => $mapping.key_down($key, $now),
-            (KeyStatus::Pressed, KeyStatus::Released) => $mapping.key_up($key, $now),
-            _ => (),
-        }
-    };
-}
-
-fn diff(
-    mapping: &mut Buttons,
-    now: Instant,
-    old: &EnumMap<JoyKey, KeyStatus>,
-    new: &EnumMap<JoyKey, KeyStatus>,
-) {
-    use JoyKey::*;
-
-    diff!(mapping, now, old, new, Up);
-    diff!(mapping, now, old, new, Down);
-    diff!(mapping, now, old, new, Left);
-    diff!(mapping, now, old, new, Right);
-    diff!(mapping, now, old, new, L);
-    diff!(mapping, now, old, new, ZL);
-    diff!(mapping, now, old, new, SL);
-    diff!(mapping, now, old, new, SR);
-    diff!(mapping, now, old, new, L3);
-    diff!(mapping, now, old, new, R3);
-    diff!(mapping, now, old, new, Minus);
-    diff!(mapping, now, old, new, Plus);
-    diff!(mapping, now, old, new, Capture);
-    diff!(mapping, now, old, new, Home);
-    diff!(mapping, now, old, new, W);
-    diff!(mapping, now, old, new, N);
-    diff!(mapping, now, old, new, S);
-    diff!(mapping, now, old, new, E);
-    diff!(mapping, now, old, new, R);
-    diff!(mapping, now, old, new, ZR);
-    diff!(mapping, now, old, new, SL);
-    diff!(mapping, now, old, new, SR);
 }
