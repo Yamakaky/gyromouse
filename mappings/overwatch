@@ -9,7 +9,12 @@ ZR = e
 ZL = SHIFT
 R = LMOUSE
 L = RMOUSE
-N = a
-W = r f
-E = none gyro_off
-S = SPACE
+#N = a
+#W = r f
+#E = none gyro_off
+#S = SPACE
+
+N = X_Y
+S = X_A
+W = X_X
+E = X_B

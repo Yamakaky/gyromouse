@@ -150,6 +150,7 @@ fn action(input: Input) -> IRes<'_, JSMAction> {
     .parse(input)?;
     let (input, action) = alt((
         map(special, ActionType::Special),
+        map(gamepadkey, ActionType::Gamepad),
         map(mousekey, ActionType::Mouse),
         map(keyboardkey, ActionType::Key),
     ))
@@ -534,5 +535,16 @@ fn special(input: Input) -> IRes<'_, SpecialKey> {
         parse(GyroInvertX(true), "gyro_inv_x"),
         parse(GyroInvertY(true), "gyro_inv_y"),
         parse(GyroTrackBall(true), "gyro_trackball"),
+    ))(input)
+}
+
+fn gamepadkey(input: Input) -> IRes<'_, virtual_gamepad::Key> {
+    use virtual_gamepad::Key::*;
+    let parse = |key, tag| value(key, tag_no_case(tag));
+    alt((
+        parse(A, "X_A"),
+        parse(B, "X_B"),
+        parse(X, "X_X"),
+        parse(Y, "X_Y"),
     ))(input)
 }

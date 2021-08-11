@@ -34,6 +34,7 @@ pub enum ActionType {
     Key(enigo::Key),
     Mouse(enigo::MouseButton),
     Special(SpecialKey),
+    Gamepad(virtual_gamepad::Key),
 }
 
 impl From<(ActionType, ClickType)> for ExtAction {
@@ -44,7 +45,8 @@ impl From<(ActionType, ClickType)> for ExtAction {
             ActionType::Special(SpecialKey::GyroOn) => ExtAction::GyroOn(b),
             ActionType::Special(SpecialKey::GyroOff) => ExtAction::GyroOff(b),
             ActionType::Special(SpecialKey::None) => unimplemented!(),
-            _ => unimplemented!(),
+            ActionType::Special(_) => unimplemented!(),
+            ActionType::Gamepad(k) => ExtAction::GamepadKeyPress(k, b),
         }
     }
 }

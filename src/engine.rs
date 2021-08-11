@@ -6,6 +6,7 @@ use std::{
 use cgmath::{Vector2, Zero};
 use enigo::{KeyboardControllable, MouseControllable};
 use hid_gamepad_types::{Acceleration, Motion, RotationSpeed};
+use virtual_gamepad::{Backend, VirtualGamepad};
 
 use crate::{
     calibration::Calibration,
@@ -27,6 +28,7 @@ pub struct Engine {
     buttons: Buttons,
     mouse: Mouse,
     gyro: Gyro,
+    gamepad: VirtualGamepad,
 }
 
 impl Engine {
@@ -35,15 +37,16 @@ impl Engine {
         buttons: Buttons,
         calibration: Calibration,
         mouse: Mouse,
-    ) -> Self {
-        Engine {
+    ) -> anyhow::Result<Self> {
+        Ok(Engine {
             left_stick: settings.new_left_stick(),
             right_stick: settings.new_right_stick(),
             buttons,
             mouse,
             gyro: Gyro::new(&settings, calibration),
             settings,
-        }
+            gamepad: VirtualGamepad::new("gyromouse")?,
+        })
     }
 
     pub fn buttons(&mut self) -> &mut Buttons {
@@ -70,7 +73,8 @@ impl Engine {
         );
     }
 
-    pub fn apply_actions(&mut self, now: Instant) {
+    pub fn apply_actions(&mut self, now: Instant) -> anyhow::Result<()> {
+        let mut gamepad_pressed = false;
         for action in self.buttons.tick(now).drain(..) {
             match action {
                 ExtAction::GyroOn(ClickType::Press) | ExtAction::GyroOff(ClickType::Release) => {
@@ -88,8 +92,21 @@ impl Engine {
                 ExtAction::MousePress(c, ClickType::Press) => self.mouse.enigo().mouse_down(c),
                 ExtAction::MousePress(c, ClickType::Release) => self.mouse.enigo().mouse_up(c),
                 ExtAction::MousePress(_, ClickType::Toggle) => unimplemented!(),
+                ExtAction::GamepadKeyPress(key, ClickType::Press) => {
+                    self.gamepad.key(key, true)?;
+                    gamepad_pressed = true;
+                }
+                ExtAction::GamepadKeyPress(key, ClickType::Release) => {
+                    self.gamepad.key(key, false)?;
+                    gamepad_pressed = true;
+                }
+                ExtAction::GamepadKeyPress(_, _) => todo!(),
             }
         }
+        if gamepad_pressed {
+            self.gamepad.push()?;
+        }
+        Ok(())
     }
 
     pub fn apply_motion(

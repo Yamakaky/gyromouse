@@ -89,6 +89,12 @@ impl Backend for SDLBackend {
                     Event::ControllerDeviceAdded { which, .. } => {
                         let mut controller = self.game_controller_system.open(which)?;
 
+                        if controller.name() == "gyromouse"
+                            || controller.name() == "Steam Virtual Gamepad"
+                        {
+                            continue;
+                        }
+
                         println!("New controller: {}", controller.name());
 
                         // Ignore errors, handled later
@@ -112,7 +118,7 @@ impl Backend for SDLBackend {
                             bindings.clone(),
                             Calibration::empty(),
                             self.mouse.clone(),
-                        );
+                        )?;
                         controllers.insert(
                             which,
                             ControllerState {
@@ -132,19 +138,21 @@ impl Backend for SDLBackend {
                         which,
                         button,
                     } => {
-                        let controller = controllers.get_mut(&which).unwrap();
-                        controller
-                            .engine
-                            .buttons()
-                            .key_down(sdl_to_sys(button), now);
+                        if let Some(controller) = controllers.get_mut(&which) {
+                            controller
+                                .engine
+                                .buttons()
+                                .key_down(sdl_to_sys(button), now);
+                        }
                     }
                     Event::ControllerButtonUp {
                         timestamp: _,
                         which,
                         button,
                     } => {
-                        let controller = controllers.get_mut(&which).unwrap();
-                        controller.engine.buttons().key_up(sdl_to_sys(button), now);
+                        if let Some(controller) = controllers.get_mut(&which) {
+                            controller.engine.buttons().key_up(sdl_to_sys(button), now);
+                        }
                     }
                     _ => {}
                 }
@@ -196,7 +204,7 @@ impl Backend for SDLBackend {
                         engine.apply_motion(rotation_speed, acceleration, dt);
                     }
                 }
-                engine.apply_actions(now);
+                engine.apply_actions(now)?;
             }
 
             last_tick = now;

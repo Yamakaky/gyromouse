@@ -16,6 +16,7 @@ pub enum Action {
 pub enum ExtAction {
     KeyPress(Key, ClickType),
     MousePress(MouseButton, ClickType),
+    GamepadKeyPress(virtual_gamepad::Key, ClickType),
     GyroOn(ClickType),
     GyroOff(ClickType),
 }
