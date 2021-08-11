@@ -3,6 +3,7 @@ name = "gyromouse"
 version = "0.1.0"
 authors = ["Mikaël Fourrier <mikael.fourrier@pm.me>"]
 edition = "2018"
+resolver = "2"
 
 [features]
 default = ["sdl2"]
