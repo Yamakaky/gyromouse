@@ -120,7 +120,7 @@ impl Backend for SDLBackend {
                             self.mouse.clone(),
                         )?;
                         controllers.insert(
-                            which,
+                            controller.instance_id(),
                             ControllerState {
                                 controller,
                                 engine,
