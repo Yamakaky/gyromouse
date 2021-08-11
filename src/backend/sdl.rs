@@ -71,7 +71,7 @@ impl Backend for SDLBackend {
     ) -> anyhow::Result<()> {
         let mut event_pump = self.sdl.event_pump().unwrap();
 
-        let mut controllers = HashMap::new();
+        let mut controllers: HashMap<u32, ControllerState> = HashMap::new();
 
         let mut last_tick = Instant::now();
 
@@ -89,9 +89,14 @@ impl Backend for SDLBackend {
                     Event::ControllerDeviceAdded { which, .. } => {
                         let mut controller = self.game_controller_system.open(which)?;
 
-                        if controller.name() == "gyromouse"
-                            || controller.name() == "Steam Virtual Gamepad"
+                        if controllers
+                            .values()
+                            .any(|c| c.controller.name() == controller.name())
                         {
+                            continue;
+                        }
+
+                        if controller.name() == "Steam Virtual Gamepad" {
                             continue;
                         }
 
