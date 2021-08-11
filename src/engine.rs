@@ -6,7 +6,8 @@ use std::{
 use cgmath::{Vector2, Zero};
 use enigo::{KeyboardControllable, MouseControllable};
 use hid_gamepad_types::{Acceleration, Motion, RotationSpeed};
-use virtual_gamepad::{Backend, VirtualGamepad};
+#[cfg(feature = "vgamepad")]
+use virtual_gamepad::Backend;
 
 use crate::{
     calibration::Calibration,
@@ -28,7 +29,8 @@ pub struct Engine {
     buttons: Buttons,
     mouse: Mouse,
     gyro: Gyro,
-    gamepad: VirtualGamepad,
+    #[cfg(feature = "vgamepad")]
+    gamepad: virtual_gamepad::VirtualGamepad,
 }
 
 impl Engine {
@@ -45,7 +47,8 @@ impl Engine {
             mouse,
             gyro: Gyro::new(&settings, calibration),
             settings,
-            gamepad: VirtualGamepad::new("gyromouse")?,
+            #[cfg(feature = "vgamepad")]
+            gamepad: virtual_gamepad::VirtualGamepad::new("gyromouse")?,
         })
     }
 
@@ -74,6 +77,7 @@ impl Engine {
     }
 
     pub fn apply_actions(&mut self, now: Instant) -> anyhow::Result<()> {
+        #[cfg(feature = "vgamepad")]
         let mut gamepad_pressed = false;
         for action in self.buttons.tick(now).drain(..) {
             match action {
@@ -92,17 +96,21 @@ impl Engine {
                 ExtAction::MousePress(c, ClickType::Press) => self.mouse.enigo().mouse_down(c),
                 ExtAction::MousePress(c, ClickType::Release) => self.mouse.enigo().mouse_up(c),
                 ExtAction::MousePress(_, ClickType::Toggle) => unimplemented!(),
+                #[cfg(feature = "vgamepad")]
                 ExtAction::GamepadKeyPress(key, ClickType::Press) => {
                     self.gamepad.key(key, true)?;
                     gamepad_pressed = true;
                 }
+                #[cfg(feature = "vgamepad")]
                 ExtAction::GamepadKeyPress(key, ClickType::Release) => {
                     self.gamepad.key(key, false)?;
                     gamepad_pressed = true;
                 }
+                #[cfg(feature = "vgamepad")]
                 ExtAction::GamepadKeyPress(_, _) => todo!(),
             }
         }
+        #[cfg(feature = "vgamepad")]
         if gamepad_pressed {
             self.gamepad.push()?;
         }

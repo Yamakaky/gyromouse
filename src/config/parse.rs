@@ -150,6 +150,7 @@ fn action(input: Input) -> IRes<'_, JSMAction> {
     .parse(input)?;
     let (input, action) = alt((
         map(special, ActionType::Special),
+        #[cfg(feature = "vgamepad")]
         map(gamepadkey, ActionType::Gamepad),
         map(mousekey, ActionType::Mouse),
         map(keyboardkey, ActionType::Key),
@@ -538,6 +539,7 @@ fn special(input: Input) -> IRes<'_, SpecialKey> {
     ))(input)
 }
 
+#[cfg(feature = "vgamepad")]
 fn gamepadkey(input: Input) -> IRes<'_, virtual_gamepad::Key> {
     use virtual_gamepad::Key::*;
     let parse = |key, tag| value(key, tag_no_case(tag));
