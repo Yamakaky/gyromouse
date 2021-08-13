@@ -19,7 +19,10 @@ use nom_supreme::{
     final_parser::{final_parser, Location},
     multi::collect_separated_terminated,
     parser_ext::ParserExt,
-    tag::complete::{tag, tag_no_case},
+    tag::{
+        complete::{tag, tag_no_case},
+        TagError,
+    },
 };
 
 use crate::{
@@ -96,7 +99,7 @@ pub fn parse_file<'a>(
     content: &'a str,
     settings: &mut Settings,
     mapping: &mut Buttons,
-) -> anyhow::Result<()> {
+) -> Result<(), ErrorTree<Location>> {
     for cmd in jsm_parse(content)? {
         match cmd {
             Cmd::Map(Key::Simple(key), ref actions) => map_key(mapping.get(key, 0), actions),
@@ -176,9 +179,9 @@ fn action(input: Input) -> IRes<'_, JSMAction> {
 
 fn binding(input: Input) -> IRes<'_, Cmd> {
     let (input, key) = keys.context("parse keys").parse(input)?;
-    let (input, _) = tag("=").delimited_by(space0).parse(input)?;
-    let (input, actions) = separated_list1(space1, action)
-        .context("parse actions")
+    let (input, actions) = equal_with_space
+        .precedes(separated_list1(space1, action).context("parse actions"))
+        .cut()
         .parse(input)?;
     Ok((input, Cmd::Map(key, actions)))
 }
@@ -201,8 +204,7 @@ fn f64_setting<'a, Output>(
 ) -> impl FnMut(Input) -> IRes<'_, Output> {
     move |input| {
         let (input, _) = tag_no_case(tag)(input)?;
-        let (input, _) = equal_with_space(input)?;
-        let (input, val) = float(input)?;
+        let (input, val) = float.preceded_by(equal_with_space).cut().parse(input)?;
         Ok((input, value_map(val as f64)))
     }
 }
@@ -241,11 +243,13 @@ fn stick_setting(input: Input) -> IRes<'_, StickSetting> {
 
 fn stick_axis(input: Input) -> IRes<'_, StickSetting> {
     let (input, tag) = alt((tag_no_case("STICK_AXIS_X"), tag_no_case("STICK_AXIS_Y")))(input)?;
-    let (input, _) = equal_with_space(input)?;
     let (input, invert) = alt((
         value(false, tag_no_case("STANDARD")),
         value(true, tag_no_case("INVERTED")),
-    ))(input)?;
+    ))
+    .preceded_by(equal_with_space)
+    .cut()
+    .parse(input)?;
     Ok((
         input,
         if tag == "STICK_AXIS_X" {
@@ -261,11 +265,13 @@ fn ring_mode(input: Input) -> IRes<'_, Setting> {
         tag_no_case("LEFT_RING_MODE"),
         tag_no_case("RIGHT_RING_MODE"),
     ))(input)?;
-    let (input, _) = equal_with_space(input)?;
     let (input, mode) = alt((
         value(RingMode::Inner, tag_no_case("INNER")),
         value(RingMode::Outer, tag_no_case("OUTER")),
-    ))(input)?;
+    ))
+    .preceded_by(equal_with_space)
+    .cut()
+    .parse(input)?;
     Ok((
         input,
         if tag == "LEFT_RING_MODE" {
@@ -298,14 +304,16 @@ fn gyro_setting(input: Input) -> IRes<'_, Setting> {
 
 fn gyro_space(input: Input) -> IRes<'_, GyroSetting> {
     let (input, _) = tag_no_case("GYRO_SPACE")(input)?;
-    let (input, _) = equal_with_space(input)?;
     let (input, space) = alt((
         value(GyroSpace::Local, tag_no_case("LOCAL")),
         value(GyroSpace::WorldTurn, tag_no_case("WORLD_TURN")),
         value(GyroSpace::WorldLean, tag_no_case("WORLD_LEAN")),
         value(GyroSpace::PlayerTurn, tag_no_case("PLAYER_TURN")),
         value(GyroSpace::PlayerLean, tag_no_case("PLAYER_LEAN")),
-    ))(input)?;
+    ))
+    .preceded_by(equal_with_space)
+    .cut()
+    .parse(input)?;
     Ok((input, GyroSetting::Space(space)))
 }
 
@@ -314,7 +322,6 @@ fn stick_mode(input: Input) -> IRes<'_, Setting> {
         tag_no_case("LEFT_STICK_MODE"),
         tag_no_case("RIGHT_STICK_MODE"),
     ))(input)?;
-    let (input, _) = equal_with_space(input)?;
     let (input, mode) = alt((
         value(StickMode::Aim, tag_no_case("AIM")),
         value(StickMode::Flick, tag_no_case("FLICK")),
@@ -324,7 +331,10 @@ fn stick_mode(input: Input) -> IRes<'_, Setting> {
         value(StickMode::NoMouse, tag_no_case("NO_MOUSE")),
         value(StickMode::RotateOnly, tag_no_case("ROTATE_ONLY")),
         value(StickMode::ScrollWheel, tag_no_case("SCROLL_WHEEL")),
-    ))(input)?;
+    ))
+    .preceded_by(equal_with_space)
+    .cut()
+    .parse(input)?;
     if key == "LEFT_STICK_MODE" {
         Ok((input, Setting::LeftStickMode(mode)))
     } else {
@@ -334,7 +344,6 @@ fn stick_mode(input: Input) -> IRes<'_, Setting> {
 
 fn trigger_mode(input: Input) -> IRes<'_, Setting> {
     let (input, key) = alt((tag_no_case("ZL_MODE"), tag_no_case("ZR_MODE")))(input)?;
-    let (input, _) = equal_with_space(input)?;
     let (input, mode) = alt((
         value(TriggerMode::MaySkip, tag_no_case("MAY_SKIP")),
         value(TriggerMode::MaySkipR, tag_no_case("MAY_SKIP_R")),
@@ -346,7 +355,10 @@ fn trigger_mode(input: Input) -> IRes<'_, Setting> {
             TriggerMode::NoSkipExclusive,
             tag_no_case("NO_SKIP_EXCLUSIVE"),
         ),
-    ))(input)?;
+    ))
+    .preceded_by(equal_with_space)
+    .cut()
+    .parse(input)?;
     if key == "ZR_MODE" {
         Ok((input, Setting::ZRMode(mode)))
     } else {
@@ -377,7 +389,9 @@ fn cmd(input: Input) -> IRes<'_, Cmd> {
         map(special, Cmd::Special),
         map(setting, Cmd::Setting),
         value(Cmd::Reset, tag_no_case("RESET_MAPPINGS")),
-    ))(input)
+    ))
+    .cut()
+    .parse(input)
 }
 
 fn comment(input: Input) -> IRes<'_, ()> {
@@ -396,7 +410,7 @@ fn empty_line(input: Input) -> IRes<'_, Option<Cmd>> {
 fn line(input: Input) -> IRes<'_, Option<Cmd>> {
     let (input, _) = space0(input)?;
     let (input, cmd) = cmd.context("command").parse(input)?;
-    let (input, _) = empty_line(input)?;
+    let (input, _) = empty_line.cut().parse(input)?;
     Ok((input, Some(cmd)))
 }
 

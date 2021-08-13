@@ -16,6 +16,10 @@ use std::{fs::File, io::Read};
 use anyhow::Context;
 use backend::Backend;
 use clap::Clap;
+use nom_supreme::{
+    error::{BaseErrorKind, ErrorTree},
+    final_parser::Location,
+};
 use opts::Opts;
 
 use crate::{config::settings::Settings, mapping::Buttons};
@@ -66,7 +70,23 @@ fn main() -> anyhow::Result<()> {
                 content_file.read_to_string(&mut buf)?;
                 buf
             };
-            config::parse::parse_file(&content, &mut settings, &mut bindings)?;
+            match config::parse::parse_file(&content, &mut settings, &mut bindings) {
+                Ok(_) => {}
+                Err(e) => {
+                    print_parse_error(
+                        &content,
+                        &e.map_locations(|l| {
+                            let line = content
+                                .lines()
+                                .skip(l.line - 1)
+                                .next()
+                                .expect("should not fail");
+                            format!("line {}, \"{}\"", l.line, line)
+                        }),
+                    );
+                    //dbg!(e);
+                }
+            };
             Ok(())
         }
         opts::Cmd::FlickCalibrate => todo!(),
@@ -82,5 +102,39 @@ fn main() -> anyhow::Result<()> {
             backend.run(r, settings, bindings)
         }
         opts::Cmd::List => backend.list_devices(),
+    }
+}
+
+fn print_parse_error(input: &str, e: &ErrorTree<String>) {
+    match e {
+        ErrorTree::Base { location, kind } => {
+            eprintln!("Error parsing {}: {}", location, kind,);
+        }
+        ErrorTree::Stack { base, contexts } => {
+            eprintln!("{:?}", contexts);
+            print_parse_error(input, &base);
+        }
+        ErrorTree::Alt(alts) => {
+            let mut last_loc = None;
+            for alt in alts {
+                if let ErrorTree::Base {
+                    location,
+                    kind: BaseErrorKind::Expected(exp),
+                } = alt
+                {
+                    match last_loc.map(|l: &String| l == location) {
+                        None => print!("  at {}: expected {}", location, exp),
+                        Some(false) => print!("\n  at {}: expected {}", location, exp),
+                        Some(true) => print!(" or {}", exp),
+                    }
+                    last_loc = Some(location);
+                } else {
+                    println!();
+                    print_parse_error(input, alt);
+                    last_loc = None;
+                }
+            }
+            println!();
+        }
     }
 }
