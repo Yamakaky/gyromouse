@@ -37,7 +37,8 @@ default-features = false
 [package.metadata.vcpkg]
 dependencies = ["sdl2"]
 git = "https://github.com/Yamakaky/vcpkg"
-branch = "sdl-hidapi"
+#branch = "sdl-hidapi"
+branch = "sdl216-hidapi"
 
 [package.metadata.vcpkg.target]
 x86_64-pc-windows-msvc = { triplet = "x64-windows-static-md" }
