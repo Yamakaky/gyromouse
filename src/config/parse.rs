@@ -30,17 +30,13 @@ use crate::{
 type Input<'a> = &'a str;
 type IRes<'a, O> = IResult<Input<'a>, O, ErrorTree<Input<'a>>>;
 
-fn convert_action_mod(
-    action: &JSMAction,
-    action_mod: Option<ActionModifier>,
-    default: ClickType,
-) -> Option<Action> {
+fn convert_action_mod(action: &JSMAction, default: ClickType) -> Option<Action> {
     if let ActionType::Special(s) = action.action {
         if s == SpecialKey::None {
             return None;
         }
     }
-    let action_type = match action_mod {
+    let action_type = match action.action_mod {
         None => default,
         Some(ActionModifier::Toggle) => ClickType::Toggle,
         Some(ActionModifier::Instant) => ClickType::Click,
@@ -53,40 +49,40 @@ fn map_key(layer: &mut Layer, actions: &[JSMAction]) {
 
     let mut first = true;
     for action in actions {
-        match (
-            action.event_mod.unwrap_or_else(|| {
-                if first {
-                    if actions.len() == 1 {
-                        Start
-                    } else {
-                        Tap
-                    }
+        match action.event_mod.unwrap_or_else(|| {
+            if first {
+                if actions.len() == 1 {
+                    Start
                 } else {
-                    Hold
+                    Tap
                 }
-            }),
-            action.action_mod,
-        ) {
-            (Tap, modifier) => {
-                layer.on_click = convert_action_mod(action, modifier, ClickType::Click);
+            } else {
+                Hold
             }
-            (Hold, modifier) => {
-                layer.on_hold_down = convert_action_mod(action, modifier, ClickType::Press);
-                if modifier.is_none() {
-                    layer.on_hold_up = convert_action_mod(action, modifier, ClickType::Release);
-                }
+        }) {
+            Tap => {
+                layer.on_click = convert_action_mod(action, ClickType::Click);
             }
-            (Start, modifier) => {
-                layer.on_down = convert_action_mod(action, modifier, ClickType::Press);
-                if modifier.is_none() {
-                    layer.on_up = convert_action_mod(action, modifier, ClickType::Release);
+            Hold => {
+                layer.on_hold_down = convert_action_mod(action, ClickType::Press);
+                if action.action_mod.is_none() {
+                    layer.on_hold_up = convert_action_mod(action, ClickType::Release);
                 }
             }
-            (Release, None) => unreachable!(),
-            (Release, modifier) => {
-                layer.on_up = convert_action_mod(action, modifier, ClickType::Release);
+            Start => {
+                layer.on_down = convert_action_mod(action, ClickType::Press);
+                if action.action_mod.is_none() {
+                    layer.on_up = convert_action_mod(action, ClickType::Release);
+                }
             }
-            (Turbo, _) => unimplemented!(),
+            Release => {
+                assert_eq!(
+                    action.action_mod, None,
+                    "action modifier non supported on release event type"
+                );
+                layer.on_up = convert_action_mod(action, ClickType::Release);
+            }
+            Turbo => unimplemented!(),
         }
         first = false;
     }
@@ -112,8 +108,7 @@ pub fn parse_file<'a>(
                     action.event_mod, None,
                     "event modificators not supported on double click"
                 );
-                mapping.get(k1, 0).on_double_click =
-                    convert_action_mod(&action.action, action.action_mod, ClickType::Click);
+                mapping.get(k1, 0).on_double_click = convert_action_mod(&action, ClickType::Click);
             }
             Cmd::Map(Key::Chorded(k1, k2), ref actions) => {
                 mapping.get(k1, 0).on_down = Some(Action::Layer(k1.to_layer(), true));
