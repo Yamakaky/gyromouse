@@ -19,10 +19,7 @@ use nom_supreme::{
     final_parser::{final_parser, Location},
     multi::collect_separated_terminated,
     parser_ext::ParserExt,
-    tag::{
-        complete::{tag, tag_no_case},
-        TagError,
-    },
+    tag::complete::{tag, tag_no_case},
 };
 
 use crate::{
@@ -104,6 +101,20 @@ pub fn parse_file<'a>(
         match cmd {
             Cmd::Map(Key::Simple(key), ref actions) => map_key(mapping.get(key, 0), actions),
 
+            Cmd::Map(Key::Chorded(k1, k2), ref actions) if k1 == k2 => {
+                assert_eq!(
+                    actions.len(),
+                    1,
+                    "only one action is supported on double click"
+                );
+                let action = actions[0];
+                assert_eq!(
+                    action.event_mod, None,
+                    "event modificators not supported on double click"
+                );
+                mapping.get(k1, 0).on_double_click =
+                    convert_action_mod(&action.action, action.action_mod, ClickType::Click);
+            }
             Cmd::Map(Key::Chorded(k1, k2), ref actions) => {
                 mapping.get(k1, 0).on_down = Some(Action::Layer(k1.to_layer(), true));
                 mapping.get(k1, 0).on_up = Some(Action::Layer(k1.to_layer(), false));
@@ -385,10 +396,10 @@ fn equal_with_space(input: Input) -> IRes<'_, ()> {
 
 fn cmd(input: Input) -> IRes<'_, Cmd> {
     alt((
-        binding.context("key binding"),
         map(special, Cmd::Special),
         map(setting, Cmd::Setting),
         value(Cmd::Reset, tag_no_case("RESET_MAPPINGS")),
+        binding.context("key binding"),
     ))
     .cut()
     .parse(input)

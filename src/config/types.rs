@@ -7,13 +7,13 @@ use crate::{
     ClickType,
 };
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum ActionModifier {
     Toggle,
     Instant,
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum EventModifier {
     Tap,
     Hold,

@@ -72,7 +72,10 @@ impl Layer {
     }
 
     fn is_simple_click(&self) -> bool {
-        self.on_hold_down.is_none() && self.on_hold_up.is_none() && self.on_double_click.is_none()
+        self.on_hold_down
+            .or(self.on_hold_up)
+            .or(self.on_double_click)
+            .is_none()
     }
 }
 
