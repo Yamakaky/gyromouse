@@ -18,7 +18,6 @@ use backend::Backend;
 use clap::Clap;
 use nom_supreme::{
     error::{BaseErrorKind, ErrorTree},
-    final_parser::Location,
 };
 use opts::Opts;
 

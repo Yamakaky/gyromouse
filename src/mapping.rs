@@ -220,7 +220,7 @@ impl Buttons {
         self.bindings[key].entry(layer).or_default()
     }
 
-    pub fn tick(&mut self, now: Instant) -> &mut Vec<ExtAction> {
+    pub fn tick<'a>(&'a mut self, now: Instant) -> impl Iterator<Item = ExtAction> + 'a {
         for key in (0..<MapKey as Enum<KeyStatus>>::POSSIBLE_VALUES)
             .map(<MapKey as Enum<KeyStatus>>::from_usize)
         {
@@ -252,10 +252,10 @@ impl Buttons {
                 _ => (),
             }
         }
-        &mut self.ext_actions
+        self.ext_actions.drain(..)
     }
 
-    pub fn key_down<K: Into<MapKey>>(&mut self, key: K, now: Instant) {
+    pub fn key_down(&mut self, key: impl Into<MapKey>, now: Instant) {
         let key = key.into();
         if self.state[key].status.is_down() {
             return;
@@ -279,7 +279,7 @@ impl Buttons {
         self.state[key].last_update = now;
     }
 
-    pub fn key_up<K: Into<MapKey>>(&mut self, key: K, now: Instant) {
+    pub fn key_up(&mut self, key: impl Into<MapKey>, now: Instant) {
         let key = key.into();
         if self.state[key].status.is_up() {
             return;
@@ -315,7 +315,7 @@ impl Buttons {
         self.state[key].last_update = now;
     }
 
-    pub fn key<K: Into<MapKey>>(&mut self, key: K, pressed: bool, now: Instant) {
+    pub fn key(&mut self, key: impl Into<MapKey>, pressed: bool, now: Instant) {
         let key = key.into();
         if pressed {
             self.key_down(key, now);

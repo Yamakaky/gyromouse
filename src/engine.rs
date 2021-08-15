@@ -79,7 +79,7 @@ impl Engine {
     pub fn apply_actions(&mut self, now: Instant) -> anyhow::Result<()> {
         #[cfg(feature = "vgamepad")]
         let mut gamepad_pressed = false;
-        for action in self.buttons.tick(now).drain(..) {
+        for action in self.buttons.tick(now) {
             match action {
                 ExtAction::GyroOn(ClickType::Press) | ExtAction::GyroOff(ClickType::Release) => {
                     self.gyro.enabled = true
