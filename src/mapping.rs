@@ -365,3 +365,73 @@ impl Buttons {
         }
     }
 }
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_simple() {
+        let mapping = {
+            let mut mapping = Buttons::new();
+            mapping.get(JoyKey::S, 0).on_click =
+                Some(Action::Ext(ExtAction::KeyPress(Key::Alt, ClickType::Press)));
+            mapping.get(JoyKey::S, 0).on_double_click = Some(Action::Ext(ExtAction::KeyPress(
+                Key::Space,
+                ClickType::Press,
+            )));
+            mapping
+        };
+
+        let t0 = Instant::now();
+        let ms1 = Duration::from_millis(1);
+        let taclick = t0 + ms1;
+        let tbhold = t0 + mapping.hold_delay - ms1;
+        let tahold = t0 + mapping.hold_delay + 2 * ms1;
+        let tbdoub = t0 + mapping.double_click_interval - ms1;
+        let tadoub = t0 + mapping.double_click_interval + 2 * ms1;
+
+        {
+            let mut mapping = mapping.clone();
+            mapping.key_down(JoyKey::S, t0);
+            mapping.key_up(JoyKey::S, t0);
+            assert!(mapping.tick(t0).next().is_none());
+
+            {
+                let mut mapping = mapping.clone();
+                let mut a = mapping.tick(tadoub);
+                assert!(matches!(
+                    dbg!(a.next()),
+                    Some(ExtAction::KeyPress(Key::Alt, ClickType::Press))
+                ));
+                assert!(a.next().is_none());
+            }
+
+            {
+                let mut mapping = mapping.clone();
+                let t = tbdoub;
+                mapping.key_down(JoyKey::S, t);
+                mapping.key_up(JoyKey::S, t);
+                let mut a = mapping.tick(t);
+                assert!(matches!(
+                    dbg!(a.next()),
+                    Some(ExtAction::KeyPress(Key::Space, ClickType::Press))
+                ));
+                assert!(a.next().is_none());
+            }
+
+            {
+                let mut mapping = mapping.clone();
+                let t = tadoub;
+                mapping.key_down(JoyKey::S, t);
+                mapping.key_up(JoyKey::S, t);
+                let mut a = mapping.tick(t);
+                assert!(matches!(
+                    dbg!(a.next()),
+                    Some(ExtAction::KeyPress(Key::Alt, ClickType::Press))
+                ));
+                assert!(a.next().is_none());
+            }
+        }
+    }
+}
