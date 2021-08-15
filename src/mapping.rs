@@ -273,6 +273,10 @@ impl Buttons {
             {
                 KeyStatus::DoubleDown
             }
+            KeyStatus::DoubleUp => {
+                Self::maybe_click(&binding, &mut self.current_layers, &mut self.ext_actions);
+                KeyStatus::Down
+            }
             KeyStatus::Up => KeyStatus::Down,
             _ => unreachable!(),
         };
