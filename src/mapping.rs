@@ -216,8 +216,8 @@ impl Buttons {
         *self = Self::new();
     }
 
-    pub fn get(&mut self, key: MapKey, layer: u8) -> &mut Layer {
-        self.bindings[key].entry(layer).or_default()
+    pub fn get(&mut self, key: impl Into<MapKey>, layer: u8) -> &mut Layer {
+        self.bindings[key.into()].entry(layer).or_default()
     }
 
     pub fn tick<'a>(&'a mut self, now: Instant) -> impl Iterator<Item = ExtAction> + 'a {
