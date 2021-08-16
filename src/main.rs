@@ -75,8 +75,9 @@ fn do_main() -> anyhow::Result<()> {
 
     match opts.cmd {
         Some(opts::Cmd::Validate(v)) => {
+            // TODO: factor this code with run
             let mut content_file = File::open(&v.mapping_file)
-                .with_context(|| format!("opening config file \"{}\"", v.mapping_file))?;
+                .with_context(|| format!("opening config file {:?}", v.mapping_file))?;
             let content = {
                 let mut buf = String::new();
                 content_file.read_to_string(&mut buf)?;
@@ -105,10 +106,16 @@ fn do_main() -> anyhow::Result<()> {
         Some(opts::Cmd::Run(r)) => run(r, backend, settings, bindings),
         Some(opts::Cmd::List) => backend.list_devices(),
         None => {
-            println!("Using default config file \"Default.txt\".");
+            let default = {
+                let mut path = std::env::current_exe()?;
+                path.pop();
+                path.push("default.txt");
+                path
+            };
+            println!("Using default config file {:?}.", default);
             run(
                 Run {
-                    mapping_file: "Default.txt".to_string(),
+                    mapping_file: default,
                 },
                 backend,
                 settings,
@@ -124,7 +131,7 @@ fn run(
     mut bindings: Buttons,
 ) -> anyhow::Result<()> {
     let mut content_file = File::open(&r.mapping_file)
-        .with_context(|| format!("opening config file {}", r.mapping_file))?;
+        .with_context(|| format!("opening config file {:?}", r.mapping_file))?;
     let content = {
         let mut buf = String::new();
         content_file.read_to_string(&mut buf)?;

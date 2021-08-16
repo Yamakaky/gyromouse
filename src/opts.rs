@@ -1,4 +1,4 @@
-use std::str::FromStr;
+use std::{path::PathBuf, str::FromStr};
 
 use clap::Clap;
 
@@ -28,7 +28,7 @@ pub enum Cmd {
 
 #[derive(Debug, Clap)]
 pub struct Run {
-    pub mapping_file: String,
+    pub mapping_file: PathBuf,
 }
 
 impl FromStr for Backend {
