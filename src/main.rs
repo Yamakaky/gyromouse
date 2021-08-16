@@ -108,6 +108,7 @@ fn do_main() -> anyhow::Result<()> {
         None => {
             let default = {
                 let mut path = std::env::current_exe()?;
+                File::open(&path)?;
                 path.pop();
                 path.push("default.txt");
                 path
