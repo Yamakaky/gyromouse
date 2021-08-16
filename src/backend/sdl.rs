@@ -69,6 +69,9 @@ impl Backend for SDLBackend {
         settings: Settings,
         bindings: Buttons,
     ) -> anyhow::Result<()> {
+        if self.game_controller_system.num_joysticks().unwrap() == 0 {
+            println!("Waiting for a game controller to connect...");
+        }
         let mut event_pump = self.sdl.event_pump().unwrap();
 
         let mut controllers: HashMap<u32, ControllerState> = HashMap::new();
