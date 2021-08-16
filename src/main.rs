@@ -52,7 +52,7 @@ fn main() {
 
     // Keep cmd.exe opened
     #[cfg(windows)]
-    let _ = stdin.read(&mut [0u8]).unwrap();
+    let _ = std::io::stdin().read(&mut [0u8]).unwrap();
 }
 
 fn do_main() -> anyhow::Result<()> {
