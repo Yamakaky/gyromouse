@@ -179,8 +179,8 @@ impl Backend for SDLBackend {
                     .cast::<f64>()
                     .unwrap()
                     / (i16::MAX as f64);
-                engine.handle_left_stick(left, now);
-                engine.handle_right_stick(right, now);
+                engine.handle_left_stick(left, now, dt);
+                engine.handle_right_stick(right, now, dt);
                 if c.sensor_enabled(SensorType::Accelerometer)
                     && c.sensor_enabled(SensorType::Gyroscope)
                 {

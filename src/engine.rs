@@ -56,23 +56,25 @@ impl Engine {
         &mut self.buttons
     }
 
-    pub fn handle_left_stick(&mut self, stick: Vector2<f64>, now: Instant) {
+    pub fn handle_left_stick(&mut self, stick: Vector2<f64>, now: Instant, dt: Duration) {
         self.left_stick.handle(
             stick,
             &self.settings,
             &mut self.buttons,
             &mut self.mouse,
             now,
+            dt,
         );
     }
 
-    pub fn handle_right_stick(&mut self, stick: Vector2<f64>, now: Instant) {
+    pub fn handle_right_stick(&mut self, stick: Vector2<f64>, now: Instant, dt: Duration) {
         self.right_stick.handle(
             stick,
             &self.settings,
             &mut self.buttons,
             &mut self.mouse,
             now,
+            dt,
         );
     }
 

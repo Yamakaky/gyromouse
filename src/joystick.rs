@@ -1,6 +1,6 @@
 #![allow(dead_code)]
 
-use std::time::Instant;
+use std::time::{Duration, Instant};
 
 use cgmath::{vec2, AbsDiffEq, Angle, Deg, InnerSpace, Rad, Vector2};
 
@@ -18,6 +18,7 @@ pub trait Stick {
         bindings: &mut Buttons,
         mouse: &mut Mouse,
         now: Instant,
+        dt: Duration,
     );
 }
 
@@ -39,14 +40,16 @@ impl Stick for CameraStick {
         _bindings: &mut Buttons,
         mouse: &mut Mouse,
         _now: Instant,
+        dt: Duration,
     ) {
+        // TODO: check settings semantic
         let s = &settings.stick_settings;
-        // TODO: use dt instead of fixed rate 66Hz
         let amp = stick.magnitude();
         let amp_zones = (amp - s.deadzone) / (s.fullzone - s.deadzone);
         if amp_zones >= 1. {
-            self.current_speed = (self.current_speed + s.aim_stick.acceleration_rate / 66.)
-                .min(s.aim_stick.acceleration_cap);
+            self.current_speed = (self.current_speed
+                + s.aim_stick.acceleration_rate * dt.as_secs_f64())
+            .min(s.aim_stick.acceleration_cap);
         } else {
             self.current_speed = 0.;
         }
@@ -55,7 +58,8 @@ impl Stick for CameraStick {
         if stick.magnitude2() > 0. {
             mouse.mouse_move_relative(
                 &settings.mouse,
-                s.aim_stick.sens_dps / 66.
+                s.aim_stick.sens_dps
+                    * dt.as_secs_f64()
                     * (1. + self.current_speed)
                     * stick.normalize_to(amp_exp),
             );
@@ -111,6 +115,7 @@ impl Stick for FlickStick {
         _bindings: &mut Buttons,
         mouse: &mut Mouse,
         now: Instant,
+        _dt: Duration,
     ) {
         let s = &settings.stick_settings;
         let offset = match self.state {
@@ -205,6 +210,7 @@ impl Stick for ButtonStick {
         bindings: &mut Buttons,
         _mouse: &mut Mouse,
         _now: Instant,
+        _dt: Duration,
     ) {
         let settings = &settings.stick_settings;
         let amp = stick.magnitude();

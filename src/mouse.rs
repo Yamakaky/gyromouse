@@ -1,4 +1,4 @@
-use cgmath::{vec2, InnerSpace, Vector2, Zero};
+use cgmath::{vec2, Vector2, Zero};
 use enigo::{Enigo, MouseControllable};
 
 use crate::config::settings::MouseSettings;
