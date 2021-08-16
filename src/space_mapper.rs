@@ -66,6 +66,7 @@ impl AdaptativeFusion {
 
 impl SensorFusion for AdaptativeFusion {
     // TODO: check http://gyrowiki.jibbsmart.com/blog:finding-gravity-with-sensor-fusion
+    // TODO: check normalize() with magnitude 0.
     fn compute_up_vector(&mut self, motion: &Motion, dt: Duration) -> Vector3<f64> {
         // settings
         let smoothing_half_time = 0.25;
@@ -159,7 +160,7 @@ impl SpaceMapper for WorldSpace {
         let yaw_diff = -rot_speed.as_vec().dot(up_vector);
 
         let pitch = vec3(1., 0., 0.) - up_vector * up_vector.x;
-        let pitch_diff = if pitch.magnitude2() != 0. {
+        let pitch_diff = if pitch.magnitude2() > 0. {
             side_reduction * rot_speed.as_vec().dot(pitch.normalize())
         } else {
             0.

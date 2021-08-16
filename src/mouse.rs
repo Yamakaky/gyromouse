@@ -1,4 +1,4 @@
-use cgmath::{vec2, Vector2, Zero};
+use cgmath::{vec2, InnerSpace, Vector2, Zero};
 use enigo::{Enigo, MouseControllable};
 
 use crate::config::settings::MouseSettings;
@@ -29,9 +29,11 @@ impl Mouse {
         let sum = offset + self.error_accumulator;
         let rounded = vec2(sum.x.round(), sum.y.round());
         self.error_accumulator = sum - rounded;
-        if rounded != Vector2::zero() {
-            self.enigo
-                .mouse_move_relative(rounded.x as i32, -rounded.y as i32);
+        if let Some(rounded) = rounded.cast::<i32>() {
+            if rounded != Vector2::zero() {
+                self.enigo
+                    .mouse_move_relative(rounded.x as i32, -rounded.y as i32);
+            }
         }
     }
 

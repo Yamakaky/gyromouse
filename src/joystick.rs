@@ -52,10 +52,14 @@ impl Stick for CameraStick {
         }
         let amp_clamped = amp_zones.max(0.).min(1.);
         let amp_exp = amp_clamped.powf(s.aim_stick.power);
-        mouse.mouse_move_relative(
-            &settings.mouse,
-            s.aim_stick.sens_dps / 66. * (1. + self.current_speed) * stick.normalize_to(amp_exp),
-        );
+        if stick.magnitude2() > 0. {
+            mouse.mouse_move_relative(
+                &settings.mouse,
+                s.aim_stick.sens_dps / 66.
+                    * (1. + self.current_speed)
+                    * stick.normalize_to(amp_exp),
+            );
+        }
     }
 }
 
@@ -206,6 +210,9 @@ impl Stick for ButtonStick {
         let amp = stick.magnitude();
         let amp_zones = (amp - settings.deadzone) / (settings.fullzone - settings.deadzone);
         let amp_clamped = amp_zones.max(0.).min(1.);
+        if amp_clamped <= 0. {
+            return;
+        }
         let stick = stick.normalize_to(amp_clamped);
         let now = std::time::Instant::now();
 
