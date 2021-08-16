@@ -103,10 +103,10 @@ jobs:
           discussion_category_name: Release
           files: ${{ matrix.release_name }}
 
-      - name: ☁️ Create Release (nightly)
-        if: github.ref == 'refs/heads/master'
-        uses: eine/tip@master
-        with:
-          tag: nightly
-          token: ${{ secrets.GITHUB_TOKEN }}
-          files: ${{ matrix.release_name }}
+            #- name: ☁️ Create Release (nightly)
+            #  if: github.ref == 'refs/heads/master'
+            #  uses: eine/tip@master
+            #  with:
+            #    tag: nightly
+            #    token: ${{ secrets.GITHUB_TOKEN }}
+            #    files: ${{ matrix.release_name }}
