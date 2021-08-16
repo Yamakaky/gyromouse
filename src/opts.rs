@@ -7,7 +7,7 @@ pub struct Opts {
     #[clap(short, long)]
     pub backend: Option<Backend>,
     #[clap(subcommand)]
-    pub cmd: Cmd,
+    pub cmd: Option<Cmd>,
 }
 
 #[derive(Debug, Clap)]

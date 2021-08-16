@@ -16,12 +16,10 @@ use std::{fs::File, io::Read};
 use anyhow::Context;
 use backend::Backend;
 use clap::Clap;
-use nom_supreme::{
-    error::{BaseErrorKind, ErrorTree},
-};
+use nom_supreme::error::{BaseErrorKind, ErrorTree};
 use opts::Opts;
 
-use crate::{config::settings::Settings, mapping::Buttons};
+use crate::{config::settings::Settings, mapping::Buttons, opts::Run};
 
 #[derive(Debug, Copy, Clone)]
 pub enum ClickType {
@@ -42,7 +40,22 @@ impl ClickType {
     }
 }
 
-fn main() -> anyhow::Result<()> {
+fn main() {
+    std::panic::set_hook(Box::new(|p| {
+        eprintln!("\n/!\\ A crash occured /!\\\n    {}", p);
+        eprintln!("\nPlease report it at <https://github.com/Yamakaky/gyromouse/issues>.")
+    }));
+
+    if let Err(e) = do_main() {
+        eprintln!("Error: {:?}", e);
+    }
+
+    // Keep cmd.exe opened
+    #[cfg(windows)]
+    let _ = stdin.read(&mut [0u8]).unwrap();
+}
+
+fn do_main() -> anyhow::Result<()> {
     let opts = Opts::parse();
 
     #[allow(unreachable_patterns)]
@@ -61,9 +74,9 @@ fn main() -> anyhow::Result<()> {
     let mut bindings = Buttons::new();
 
     match opts.cmd {
-        opts::Cmd::Validate(v) => {
+        Some(opts::Cmd::Validate(v)) => {
             let mut content_file = File::open(&v.mapping_file)
-                .with_context(|| format!("opening config file {}", v.mapping_file))?;
+                .with_context(|| format!("opening config file \"{}\"", v.mapping_file))?;
             let content = {
                 let mut buf = String::new();
                 content_file.read_to_string(&mut buf)?;
@@ -88,20 +101,37 @@ fn main() -> anyhow::Result<()> {
             };
             Ok(())
         }
-        opts::Cmd::FlickCalibrate => todo!(),
-        opts::Cmd::Run(r) => {
-            let mut content_file = File::open(&r.mapping_file)
-                .with_context(|| format!("opening config file {}", r.mapping_file))?;
-            let content = {
-                let mut buf = String::new();
-                content_file.read_to_string(&mut buf)?;
-                buf
-            };
-            config::parse::parse_file(&content, &mut settings, &mut bindings)?;
-            backend.run(r, settings, bindings)
+        Some(opts::Cmd::FlickCalibrate) => todo!(),
+        Some(opts::Cmd::Run(r)) => run(r, backend, settings, bindings),
+        Some(opts::Cmd::List) => backend.list_devices(),
+        None => {
+            println!("Using default config file \"Default.txt\".");
+            run(
+                Run {
+                    mapping_file: "Default.txt".to_string(),
+                },
+                backend,
+                settings,
+                bindings,
+            )
         }
-        opts::Cmd::List => backend.list_devices(),
     }
+}
+fn run(
+    r: Run,
+    mut backend: Box<dyn Backend>,
+    mut settings: Settings,
+    mut bindings: Buttons,
+) -> anyhow::Result<()> {
+    let mut content_file = File::open(&r.mapping_file)
+        .with_context(|| format!("opening config file {}", r.mapping_file))?;
+    let content = {
+        let mut buf = String::new();
+        content_file.read_to_string(&mut buf)?;
+        buf
+    };
+    config::parse::parse_file(&content, &mut settings, &mut bindings)?;
+    backend.run(r, settings, bindings)
 }
 
 fn print_parse_error(input: &str, e: &ErrorTree<String>) {
