@@ -94,11 +94,19 @@ jobs:
           7z a ../../${{ matrix.release_name }} ${{ matrix.artifact_name }}
           cd ../..
 
-      - name: ☁️ Create Release
+      - name: ☁️ Create Release (tag)
         uses: softprops/action-gh-release@v1
         if: startsWith(github.ref, 'refs/tags/')
         with:
           draft: true
           body: ${{ steps.github_release.outputs.changelog }}
+          discussion_category_name: Release
           files: ${{ matrix.release_name }}
-          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: ☁️ Create Release (nightly)
+        uses: softprops/action-gh-release@v1
+        if: github.ref == 'refs/heads/master'
+        with:
+          name: nightly
+          prerelease: true
+          files: ${{ matrix.release_name }}
