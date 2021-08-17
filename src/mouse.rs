@@ -50,8 +50,10 @@ impl Clone for Mouse {
 
 impl Mouse {
     pub fn new() -> Self {
+        #[allow(unused_mut)]
         let mut enigo = Enigo::new();
         // Lower delay for xdo, see #1
+        #[cfg(target_os = "linux")]
         enigo.set_delay(100);
         Mouse {
             enigo,
