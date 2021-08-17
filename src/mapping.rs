@@ -220,7 +220,7 @@ impl Buttons {
         self.bindings[key.into()].entry(layer).or_default()
     }
 
-    pub fn tick<'a>(&'a mut self, now: Instant) -> impl Iterator<Item = ExtAction> + 'a {
+    pub fn tick(&mut self, now: Instant) -> impl Iterator<Item = ExtAction> + '_ {
         for key in (0..<MapKey as Enum<KeyStatus>>::POSSIBLE_VALUES)
             .map(<MapKey as Enum<KeyStatus>>::from_usize)
         {
