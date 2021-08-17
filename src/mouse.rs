@@ -50,8 +50,11 @@ impl Clone for Mouse {
 
 impl Mouse {
     pub fn new() -> Self {
+        let mut enigo = Enigo::new();
+        // Lower delay for xdo, see #1
+        enigo.set_delay(100);
         Mouse {
-            enigo: Enigo::new(),
+            enigo,
             error_accumulator: Vector2::zero(),
         }
     }
