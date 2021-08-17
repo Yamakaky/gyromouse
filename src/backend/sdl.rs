@@ -182,7 +182,7 @@ impl Backend for SDLBackend {
 
                 // In SDL, -..+ y is top..bottom
                 left.y = -left.y;
-                right.y *= -right.y;
+                right.y = -right.y;
 
                 engine.handle_left_stick(left, now, dt);
                 engine.handle_right_stick(right, now, dt);
