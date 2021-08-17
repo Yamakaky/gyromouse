@@ -34,7 +34,7 @@ E = GYRO_OFF
 + = LALT\ !TAB\           # Task view
 - = CONTROL\ LWINDOWS\ O\   # On Screen Keyboard
 HOME = LWINDOWS			 # Start Menu
-HOME,HOME = LWINDOWS\ D\ # Minimize All
+#HOME,HOME = LWINDOWS\ D\ # Minimize All
 
 # Right stick drives the cursor
 MIN_GYRO_SENS = 8
