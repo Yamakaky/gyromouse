@@ -3,7 +3,7 @@ use std::{
     time::{Duration, Instant},
 };
 
-use cgmath::{Vector2, Zero};
+use cgmath::Vector2;
 use enigo::{KeyboardControllable, MouseControllable};
 use hid_gamepad_types::{Acceleration, Motion, RotationSpeed};
 #[cfg(feature = "vgamepad")]
@@ -15,7 +15,7 @@ use crate::{
     gyromouse::GyroMouse,
     joystick::Stick,
     mapping::{Buttons, ExtAction},
-    mouse::Mouse,
+    mouse::{Mouse, MouseMovement},
     space_mapper::{
         self, LocalSpace, PlayerSpace, SensorFusion, SimpleFusion, SpaceMapper, WorldSpace,
     },
@@ -177,7 +177,7 @@ impl Gyro {
         dt: Duration,
     ) {
         const SMOOTH_RATE: bool = true;
-        let mut delta_position = Vector2::zero();
+        let mut delta_position = MouseMovement::zero();
         let dt = dt / motions.len() as u32;
         for (i, frame) in motions.iter().cloned().enumerate() {
             let frame = self.calibration.calibrate(frame);

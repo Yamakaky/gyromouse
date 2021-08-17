@@ -1,7 +1,7 @@
 use cgmath::{Vector2, Zero};
 use std::{collections::VecDeque, time::Duration};
 
-use crate::config::settings::GyroSettings;
+use crate::{config::settings::GyroSettings, mouse::MouseMovement};
 
 #[derive(Debug, Default)]
 pub struct GyroMouse {
@@ -81,7 +81,7 @@ impl GyroMouse {
         settings: &GyroSettings,
         mut rot: Vector2<f64>,
         dt: Duration,
-    ) -> Vector2<f64> {
+    ) -> MouseMovement {
         if settings.smooth_threshold > 0. {
             rot = self.tiered_smooth(settings, rot, dt);
         }
@@ -90,7 +90,7 @@ impl GyroMouse {
             rot = self.tight(settings, rot);
         }
         let sens = self.get_sens(settings, rot);
-        rot * sens * dt.as_secs_f64()
+        MouseMovement::from_vec_deg(rot * sens * dt.as_secs_f64())
     }
 
     fn tiered_smooth(

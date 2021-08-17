@@ -171,16 +171,22 @@ impl Backend for SDLBackend {
             for controller in controllers.values_mut() {
                 let c = &mut controller.controller;
                 let engine = &mut controller.engine;
-                let left = vec2(c.axis(Axis::LeftX), c.axis(Axis::LeftY))
+                let mut left = vec2(c.axis(Axis::LeftX), c.axis(Axis::LeftY))
                     .cast::<f64>()
                     .unwrap()
                     / (i16::MAX as f64);
-                let right = vec2(c.axis(Axis::RightX), c.axis(Axis::RightY))
+                let mut right = vec2(c.axis(Axis::RightX), c.axis(Axis::RightY))
                     .cast::<f64>()
                     .unwrap()
                     / (i16::MAX as f64);
+
+                // In SDL, -..+ y is top..bottom
+                left.y = -left.y;
+                right.y *= -right.y;
+
                 engine.handle_left_stick(left, now, dt);
                 engine.handle_right_stick(right, now, dt);
+
                 if c.sensor_enabled(SensorType::Accelerometer)
                     && c.sensor_enabled(SensorType::Gyroscope)
                 {

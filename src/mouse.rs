@@ -1,7 +1,40 @@
-use cgmath::{vec2, Vector2, Zero};
+use std::ops::AddAssign;
+
+use cgmath::{vec2, Deg, Vector2, Zero};
 use enigo::{Enigo, MouseControllable};
 
 use crate::config::settings::MouseSettings;
+
+#[derive(Debug, Clone, Copy)]
+pub struct MouseMovement {
+    /// Horizontal axis, + to the right
+    x: Deg<f64>,
+    /// Vertical axis, + to the top
+    y: Deg<f64>,
+}
+
+impl MouseMovement {
+    pub fn new(x: Deg<f64>, y: Deg<f64>) -> Self {
+        Self { x, y }
+    }
+    pub fn zero() -> Self {
+        Self::new(Deg(0.), Deg(0.))
+    }
+    /// Convert a Vector2 with degree movement values
+    pub fn from_vec_deg(vec: Vector2<f64>) -> Self {
+        Self {
+            x: Deg(vec.x),
+            y: Deg(vec.y),
+        }
+    }
+}
+
+impl AddAssign for MouseMovement {
+    fn add_assign(&mut self, rhs: Self) {
+        self.x += rhs.x;
+        self.y += rhs.y;
+    }
+}
 
 #[derive(Debug)]
 pub struct Mouse {
@@ -24,13 +57,15 @@ impl Mouse {
     }
 
     // mouse movement is pixel perfect, so we keep track of the error.
-    pub fn mouse_move_relative(&mut self, settings: &MouseSettings, mut offset: Vector2<f64>) {
-        offset *= settings.real_world_calibration * settings.in_game_sens;
-        let sum = offset + self.error_accumulator;
+    pub fn mouse_move_relative(&mut self, settings: &MouseSettings, offset: MouseMovement) {
+        let offset_pixel =
+            vec2(offset.x.0, offset.y.0) * settings.real_world_calibration * settings.in_game_sens;
+        let sum = offset_pixel + self.error_accumulator;
         let rounded = vec2(sum.x.round(), sum.y.round());
         self.error_accumulator = sum - rounded;
         if let Some(rounded) = rounded.cast::<i32>() {
             if rounded != Vector2::zero() {
+                // In enigo, +y is toward the bottom
                 self.enigo
                     .mouse_move_relative(rounded.x as i32, -rounded.y as i32);
             }

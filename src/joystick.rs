@@ -2,12 +2,12 @@
 
 use std::time::{Duration, Instant};
 
-use cgmath::{vec2, AbsDiffEq, Angle, Deg, InnerSpace, Rad, Vector2};
+use cgmath::{AbsDiffEq, Angle, Deg, InnerSpace, Rad, Vector2};
 
 use crate::{
     config::{settings::Settings, types::RingMode},
     mapping::{Buttons, VirtualKey},
-    mouse::Mouse,
+    mouse::{Mouse, MouseMovement},
 };
 
 pub trait Stick {
@@ -56,13 +56,10 @@ impl Stick for CameraStick {
         let amp_clamped = amp_zones.max(0.).min(1.);
         let amp_exp = amp_clamped.powf(s.aim_stick.power);
         if stick.magnitude2() > 0. {
-            mouse.mouse_move_relative(
-                &settings.mouse,
-                s.aim_stick.sens_dps
-                    * dt.as_secs_f64()
-                    * (1. + self.current_speed)
-                    * stick.normalize_to(amp_exp),
-            );
+            let offset = stick.normalize_to(amp_exp)
+                * s.aim_stick.sens_dps
+                * ((1. + self.current_speed) * dt.as_secs_f64());
+            mouse.mouse_move_relative(&settings.mouse, MouseMovement::from_vec_deg(offset));
         }
     }
 }
@@ -173,7 +170,7 @@ impl Stick for FlickStick {
             }
         };
         if let Some(offset) = offset {
-            mouse.mouse_move_relative(&settings.mouse, vec2(offset.0, 0.));
+            mouse.mouse_move_relative(&settings.mouse, MouseMovement::new(offset, Deg(0.)));
         }
     }
 }
