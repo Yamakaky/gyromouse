@@ -40,7 +40,7 @@ impl SensorFusion for SimpleFusion {
     fn compute_up_vector(&mut self, motion: &Motion, dt: Duration) -> Vector3<f64> {
         let rotation = Quaternion::from(motion.rotation_speed * dt).invert();
         self.up_vector = rotation.rotate_vector(self.up_vector);
-        // TODO: frame rate independent
+        // TODO: Make the correction rate depend on dt instead of fixed per tick.
         self.up_vector += (motion.acceleration.as_vec() - self.up_vector) * self.correction_factor;
         self.up_vector
     }
