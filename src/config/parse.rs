@@ -232,11 +232,11 @@ fn stick_setting(input: Input) -> IRes<'_, StickSetting> {
         f64_setting("STICK_ACCELERATION_CAP", |v| {
             StickSetting::Aim(AimStickSetting::AccelerationCap(v))
         }),
-        f64_setting("FLICK_TIME", |v| {
-            StickSetting::Flick(FlickStickSetting::FlickTime(Duration::from_secs_f64(v)))
-        }),
         f64_setting("FLICK_TIME_EXPONENT", |v| {
             StickSetting::Flick(FlickStickSetting::Exponent(v))
+        }),
+        f64_setting("FLICK_TIME", |v| {
+            StickSetting::Flick(FlickStickSetting::FlickTime(Duration::from_secs_f64(v)))
         }),
         f64_setting("FLICK_DEADZONE_ANGLE", |v| {
             StickSetting::Flick(FlickStickSetting::ForwardDeadzoneArc(Deg(v * 2.)))
@@ -330,8 +330,8 @@ fn stick_mode(input: Input) -> IRes<'_, Setting> {
     ))(input)?;
     let (input, mode) = alt((
         value(StickMode::Aim, tag_no_case("AIM")),
-        value(StickMode::Flick, tag_no_case("FLICK")),
         value(StickMode::FlickOnly, tag_no_case("FLICK_ONLY")),
+        value(StickMode::Flick, tag_no_case("FLICK")),
         value(StickMode::MouseArea, tag_no_case("MOUSE_AREA")),
         value(StickMode::MouseRing, tag_no_case("MOUSE_RING")),
         value(StickMode::NoMouse, tag_no_case("NO_MOUSE")),
@@ -351,16 +351,16 @@ fn stick_mode(input: Input) -> IRes<'_, Setting> {
 fn trigger_mode(input: Input) -> IRes<'_, Setting> {
     let (input, key) = alt((tag_no_case("ZL_MODE"), tag_no_case("ZR_MODE")))(input)?;
     let (input, mode) = alt((
-        value(TriggerMode::MaySkip, tag_no_case("MAY_SKIP")),
         value(TriggerMode::MaySkipR, tag_no_case("MAY_SKIP_R")),
-        value(TriggerMode::MustSkip, tag_no_case("MUST_SKIP")),
+        value(TriggerMode::MaySkip, tag_no_case("MAY_SKIP")),
         value(TriggerMode::MustSkipR, tag_no_case("MUST_SKIP_R")),
+        value(TriggerMode::MustSkip, tag_no_case("MUST_SKIP")),
         value(TriggerMode::NoFull, tag_no_case("NO_FULL")),
-        value(TriggerMode::NoSkip, tag_no_case("NO_SKIP")),
         value(
             TriggerMode::NoSkipExclusive,
             tag_no_case("NO_SKIP_EXCLUSIVE"),
         ),
+        value(TriggerMode::NoSkip, tag_no_case("NO_SKIP")),
     ))
     .preceded_by(equal_with_space)
     .cut()
