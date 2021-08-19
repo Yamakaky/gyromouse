@@ -3,6 +3,8 @@ use std::{path::PathBuf, str::FromStr};
 use clap::Clap;
 
 #[derive(Debug, Clap)]
+#[clap(version = clap::crate_version!())]
+#[clap(setting = clap::AppSettings::ColoredHelp)]
 pub struct Opts {
     #[clap(short, long)]
     pub backend: Option<Backend>,
