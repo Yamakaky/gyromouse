@@ -86,13 +86,13 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: build
-          args: --verbose --release --no-default-features --features sdl2-static
+          args: --verbose --release --features sdl2-static
 
       - name: ⚙️ Run tests
         uses: actions-rs/cargo@v1
         with:
           command: test
-          args: --verbose --release
+          args: --verbose --release --features sdl2-static
 
       - name: ☁️ Upload gyromouse
         uses: actions/upload-artifact@v2
