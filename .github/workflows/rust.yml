@@ -50,7 +50,7 @@ jobs:
           toolchain: stable
       - uses: Swatinem/rust-cache@v1
         with:
-          key: v3
+          key: v4
 
       - name: ⚙️ Install cargo-vcpkg
         run: cargo vcpkg --version || cargo install cargo-vcpkg
