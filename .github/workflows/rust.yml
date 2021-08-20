@@ -3,17 +3,38 @@ name: CI
 on: [push, pull_request]
 
 jobs:
-  todo:
+  check:
+    name: Check
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@master
-      - name: Run tdg-github-action
+
+      - name: ⚙️ Create issues from TODO comments
         uses: ribtoks/tdg-github-action@master
         with:
           TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPO: ${{ github.repository }}
           SHA: ${{ github.sha }}
           REF: ${{ github.ref }}
+
+      - name: ⚙️ Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+          profile: minimal
+          components: rustfmt
+      - name: ⚙️ Install clippy
+        run: rustup component add clippy
+
+      - name: ⚙️ Clippy
+        uses: actions-rs/clippy-check@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          args: --all-features
+
+      - name: ⚙️ Check formatting
+        run: cargo fmt --all -- --check
 
   build:
     name: Build for ${{ matrix.os }}
@@ -101,6 +122,7 @@ jobs:
           path: target/release/${{ matrix.artifact_name }}
 
       - name: ⚙️ Prepare Release archives
+        shell: bash
         run: |
           mkdir gyromouse
           cp -r target/release/${{ matrix.artifact_name }} mappings README.md CHANGELOG.md gyromouse/
