@@ -1,4 +1,5 @@
-### This file must parse
+### This file must parse, see testing in mod.rs
+### Keep the random formating for spacE and case insensitive parsing
 
  # comment
 W = a # comment 
@@ -84,3 +85,56 @@ SCROLL_SENS = 10
 #MOTION_STICK_AXIS=norMAL 
 #SET_MOTION_STICK_NEUTRAL
 #LEAN_THRESHOLD =  10
+
+AUTO_CALIBRATE_GYRO = on
+AUTO_CALIBRATE_GYRO = off
+RESTART_gyro_Calibration
+finish_gyro_Calibration
+
+## Gyro
+
+GYRO_SENS = 1.1103
+GYRO_SENS = 1.1103    2.
+MIN_gyro_THRESHOLD = 2
+MAX_gyro_THRESHOLD = 1.10
+MIN_gyro_SENS = 1.
+MAX_gyro_SENS = 1.10
+GYRO_SPACE = player_turn
+GYRO_SPACE = player_lean
+GYRO_SPACE = WORLD_turn
+GYRO_SPACE = WORLD_lean
+GYRO_SPACE = local
+GYRO_AXIS_X = STANDARD
+     GYRO_AXIS_Y   = invert
+GYRO_CUTOFF_SPEED = 1.
+GYRO_CUTOFF_RECOVERY = 1.
+GYRO_SMOOTH_THRESHOLD = 0.
+GYRO_SMOOTH_TIME = 1.
+
+## Calib
+
+REAL_WORLD_CALIBRATION = 1.
+IN_GAME_SENS = 1.
+COUNTER_OS_MOUSE_speed
+IGNORE_OS_MOUSE_SPEED
+CALCULATE_REAL_WORLD_CALIBRATION
+CALCULATE_REAL_WORLD_CALIBRATION 10
+
+## Gamepad
+
+VIRTUAL_CONTROLLER = XBOX
+VIRTUAL_CONTROLLER = DS4
+VIRTUAL_CONTROLLER =NONE
+
+LEFT_STICK_MODE = LEFT_STICK
+RIGHT_STICK_MODE = RIGHT_STICK
+ZL_MODE = X_LT
+ZR_MODE = X_RT
+ZL_MODE = PS_L2
+ZR_MODE = PS_R2
+
+## Modeshift
+
+R,GYRO_ON = NONE\ # Disable gyro when R is down
+R,RIGHT_STICK_MODE = MOUSE_AREA # Select wheel item with stick
+ZLF,GYRO_SENS = 0.5 0.4 # Half sensitivity on full pull
