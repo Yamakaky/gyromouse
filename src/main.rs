@@ -86,11 +86,7 @@ fn do_main() -> anyhow::Result<()> {
                     print_parse_error(
                         &content,
                         &e.map_locations(|l| {
-                            let line = content
-                                .lines()
-                                .skip(l.line - 1)
-                                .next()
-                                .expect("should not fail");
+                            let line = content.lines().nth(l.line - 1).expect("should not fail");
                             format!("line {}, \"{}\"", l.line, line)
                         }),
                     );
@@ -146,7 +142,7 @@ fn print_parse_error(input: &str, e: &ErrorTree<String>) {
         }
         ErrorTree::Stack { base, contexts } => {
             eprintln!("{:?}", contexts);
-            print_parse_error(input, &base);
+            print_parse_error(input, base);
         }
         ErrorTree::Alt(alts) => {
             let mut last_loc = None;

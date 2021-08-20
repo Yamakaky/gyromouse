@@ -86,7 +86,10 @@ impl GyroMouse {
             rot = self.tiered_smooth(settings, rot, dt);
         }
         if settings.cutoff_recovery > 0. {
-            assert_eq!(settings.cutoff_speed, 0.);
+            #[allow(clippy::float_cmp)]
+            {
+                assert_eq!(settings.cutoff_speed, 0.);
+            }
             rot = self.tight(settings, rot);
         }
         let sens = self.get_sens(settings, rot);

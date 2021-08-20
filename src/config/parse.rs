@@ -204,7 +204,7 @@ fn setting(input: Input) -> IRes<'_, Setting> {
     ))(input)
 }
 
-fn f64_setting<'a, Output>(
+fn f64_setting<Output>(
     tag: &'static str,
     value_map: impl Fn(f64) -> Output,
 ) -> impl FnMut(Input) -> IRes<'_, Output> {
@@ -372,14 +372,14 @@ fn trigger_mode(input: Input) -> IRes<'_, Setting> {
     }
 }
 fn mouse_setting(input: Input) -> IRes<MouseSetting> {
-    Ok(alt((
+    alt((
         f64_setting("REAL_WORLD_CALIBRATION", MouseSetting::RealWorldCalibration),
         f64_setting("IN_GAME_SENS", MouseSetting::InGameSens),
         value(
             MouseSetting::CounterOSSpeed(true),
             tag_no_case("COUNTER_OS_MOUSE_SPEED"),
         ),
-    ))(input)?)
+    ))(input)
 }
 
 fn equal_with_space(input: Input) -> IRes<'_, ()> {
@@ -421,10 +421,10 @@ fn line(input: Input) -> IRes<'_, Option<Cmd>> {
 }
 
 pub fn jsm_parse(input: Input) -> Result<Vec<Cmd>, ErrorTree<Location>> {
-    Ok(final_parser(
+    final_parser(
         collect_separated_terminated(alt((empty_line, line)).context("line"), line_ending, eof)
             .map(|cmds: Vec<_>| cmds.into_iter().flatten().collect()),
-    )(input)?)
+    )(input)
 }
 
 fn mapkey(input: Input) -> IRes<'_, MapKey> {
