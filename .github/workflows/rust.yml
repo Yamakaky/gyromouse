@@ -102,23 +102,15 @@ jobs:
 
       - name: ⚙️ Prepare Release archives
         run: |
-          cd target/release
-          7z a ../../${{ matrix.release_name }} ${{ matrix.artifact_name }}
-          cd ../..
-
-      - name: ⚙️ Build Changelog
-        if: startsWith(github.ref, 'refs/tags/')
-        id: github_release
-        uses: mikepenz/release-changelog-builder-action@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          mkdir gyromouse
+          cp -r target/release/${{ matrix.artifact_name }} mappings README.md CHANGELOG.md gyromouse/
+          7z a ${{ matrix.release_name }} gyromouse
 
       - name: ☁️ Create Release (tag)
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v1
         with:
           draft: true
-          body: ${{ steps.github_release.outputs.changelog }}
           discussion_category_name: Release
           files: ${{ matrix.release_name }}
 
