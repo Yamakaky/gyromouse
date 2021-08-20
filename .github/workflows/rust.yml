@@ -24,14 +24,6 @@ jobs:
           override: true
           profile: minimal
           components: rustfmt
-      - name: ⚙️ Install clippy
-        run: rustup component add clippy
-
-      - name: ⚙️ Clippy
-        uses: actions-rs/clippy-check@v1
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          args: --all-features
 
       - name: ⚙️ Check formatting
         run: cargo fmt --all -- --check
@@ -69,6 +61,8 @@ jobs:
       - uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
+      - name: ⚙️ Install clippy
+        run: rustup component add clippy
       - uses: Swatinem/rust-cache@v1
         with:
           key: v4
@@ -114,6 +108,12 @@ jobs:
         with:
           command: test
           args: --verbose --release --features sdl2-static
+
+      - name: ⚙️ Clippy
+        uses: actions-rs/clippy-check@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          args: --all-features
 
       - name: ☁️ Upload gyromouse
         uses: actions/upload-artifact@v2
