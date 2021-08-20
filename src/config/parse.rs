@@ -379,6 +379,10 @@ fn mouse_setting(input: Input) -> IRes<MouseSetting> {
             MouseSetting::CounterOSSpeed(true),
             tag_no_case("COUNTER_OS_MOUSE_SPEED"),
         ),
+        value(
+            MouseSetting::CounterOSSpeed(false),
+            tag_no_case("IGNORE_OS_MOUSE_SPEED"),
+        ),
     ))(input)
 }
 
