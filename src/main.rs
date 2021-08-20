@@ -41,10 +41,7 @@ impl ClickType {
 }
 
 fn main() {
-    std::panic::set_hook(Box::new(|p| {
-        eprintln!("\n/!\\ A crash occured /!\\\n    {}", p);
-        eprintln!("\nPlease report it at <https://github.com/Yamakaky/gyromouse/issues>.")
-    }));
+    human_panic::setup_panic!();
 
     if let Err(e) = do_main() {
         eprintln!("Error: {:?}", e);
