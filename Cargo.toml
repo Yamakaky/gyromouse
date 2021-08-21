@@ -10,11 +10,10 @@ homepage = "https://github.com/Yamakaky/gyromouse"
 resolver = "2"
 
 [features]
-default = ["sdl2"]
+default = ["sdl2", "virtual-gamepad"]
 hidapi = ["hid-gamepad", "joycon"]
 sdl2-static = ["sdl2", "sdl2/static-link", "sdl2/use-vcpkg"]
-vgamepad = []
-#vgamepad = ["virtual-gamepad"]
+vgamepad = ["virtual-gamepad"]
 
 [dependencies]
 anyhow = { version = "1.0", features = ["backtrace"] }
@@ -26,12 +25,10 @@ enum-map = "0.6"
 hid-gamepad-types = { git = "https://github.com/Yamakaky/joy" }
 hid-gamepad = { git = "https://github.com/Yamakaky/joy", optional = true }
 joycon = { git = "https://github.com/Yamakaky/joy", optional = true }
-nom = "6.2"
-nom-supreme = "0.5"
+nom = "7.0.0"
+nom-supreme = { git = "https://github.com/Yamakaky/nom-supreme", branch = "nom7" }
 human-panic = "1.0.3"
-#nom = { version = "6.2", path = "../nom", default-features = false }
-#nom-supreme = { path = "../nom-supreme" }
-#virtual-gamepad = { git = "https://github.com/Yamakaky/virtual-gamepad", optional = true }
+virtual-gamepad = { git = "https://github.com/Yamakaky/virtual-gamepad", optional = true }
 
 [dependencies.sdl2]
 git = "https://github.com/Yamakaky/rust-sdl2"
