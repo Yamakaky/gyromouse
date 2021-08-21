@@ -1043,7 +1043,7 @@ dependencies = [
 [[package]]
 name = "virtual-gamepad"
 version = "0.1.0"
-source = "git+https://github.com/Yamakaky/virtual-gamepad#83b7af58d1f630351aaf01dae7926af15c1fde14"
+source = "git+https://github.com/Yamakaky/virtual-gamepad#66dc49ba4c8752335284ad00847a91182471ab9a"
 dependencies = [
  "anyhow",
  "evdev",
