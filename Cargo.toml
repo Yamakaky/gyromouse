@@ -10,7 +10,7 @@ homepage = "https://github.com/Yamakaky/gyromouse"
 resolver = "2"
 
 [features]
-default = ["sdl2", "virtual-gamepad"]
+default = ["sdl2", "vgamepad"]
 hidapi = ["hid-gamepad", "joycon"]
 sdl2-static = ["sdl2", "sdl2/static-link", "sdl2/use-vcpkg"]
 vgamepad = ["virtual-gamepad"]

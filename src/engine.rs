@@ -6,8 +6,6 @@ use std::{
 use cgmath::Vector2;
 use enigo::{KeyboardControllable, MouseControllable};
 use hid_gamepad_types::{Acceleration, Motion, RotationSpeed};
-#[cfg(feature = "vgamepad")]
-use virtual_gamepad::Backend;
 
 use crate::{
     calibration::Calibration,
@@ -30,7 +28,7 @@ pub struct Engine {
     mouse: Mouse,
     gyro: Gyro,
     #[cfg(feature = "vgamepad")]
-    gamepad: virtual_gamepad::VirtualGamepad,
+    gamepad: Option<Box<dyn virtual_gamepad::Backend>>,
 }
 
 impl Engine {
@@ -48,7 +46,9 @@ impl Engine {
             gyro: Gyro::new(&settings, calibration),
             settings,
             #[cfg(feature = "vgamepad")]
-            gamepad: virtual_gamepad::VirtualGamepad::new("gyromouse")?,
+            gamepad: virtual_gamepad::new(virtual_gamepad::GamepadType::DS4)
+                .map(|vg| -> Box<dyn virtual_gamepad::Backend> { Box::new(vg) })
+                .ok(),
         })
     }
 
@@ -100,21 +100,27 @@ impl Engine {
                 ExtAction::MousePress(_, ClickType::Toggle) => unimplemented!(),
                 #[cfg(feature = "vgamepad")]
                 ExtAction::GamepadKeyPress(key, ClickType::Press) => {
-                    self.gamepad.key(key, true)?;
-                    gamepad_pressed = true;
+                    if let Some(gamepad) = &mut self.gamepad {
+                        gamepad.key(key, true)?;
+                        gamepad_pressed = true;
+                    }
                 }
                 #[cfg(feature = "vgamepad")]
                 ExtAction::GamepadKeyPress(key, ClickType::Release) => {
-                    self.gamepad.key(key, false)?;
-                    gamepad_pressed = true;
+                    if let Some(gamepad) = &mut self.gamepad {
+                        gamepad.key(key, false)?;
+                        gamepad_pressed = true;
+                    }
                 }
                 #[cfg(feature = "vgamepad")]
                 ExtAction::GamepadKeyPress(_, _) => todo!(),
             }
         }
         #[cfg(feature = "vgamepad")]
-        if gamepad_pressed {
-            self.gamepad.push()?;
+        if let Some(gamepad) = &mut self.gamepad {
+            if gamepad_pressed {
+                gamepad.push()?;
+            }
         }
         Ok(())
     }

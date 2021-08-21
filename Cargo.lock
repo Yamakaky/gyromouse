@@ -842,7 +842,7 @@ checksum = "dead70b0b5e03e9c814bcb6b01e03e68f7c57a80aa48c72ec92152ab3e818d49"
 [[package]]
 name = "sdl2"
 version = "0.34.5"
-source = "git+https://github.com/Yamakaky/rust-sdl2?branch=sensor-api#67fe292f190776134da672ccbd1ccd6a2bff40b6"
+source = "git+https://github.com/Yamakaky/rust-sdl2?branch=sensor-api#d92cd4a2910185149e1398abde60752f88aa2f72"
 dependencies = [
  "bitflags",
  "lazy_static",
@@ -853,7 +853,7 @@ dependencies = [
 [[package]]
 name = "sdl2-sys"
 version = "0.34.5"
-source = "git+https://github.com/Yamakaky/rust-sdl2?branch=sensor-api#67fe292f190776134da672ccbd1ccd6a2bff40b6"
+source = "git+https://github.com/Yamakaky/rust-sdl2?branch=sensor-api#d92cd4a2910185149e1398abde60752f88aa2f72"
 dependencies = [
  "cfg-if",
  "libc",
@@ -1043,7 +1043,7 @@ dependencies = [
 [[package]]
 name = "virtual-gamepad"
 version = "0.1.0"
-source = "git+https://github.com/Yamakaky/virtual-gamepad#a45ca822adc4d49dcd99aef0309de24c4f2916cd"
+source = "git+https://github.com/Yamakaky/virtual-gamepad#94bfb12b6726ce38e3236a07f7cf3a5249fa52c3"
 dependencies = [
  "anyhow",
  "evdev",
