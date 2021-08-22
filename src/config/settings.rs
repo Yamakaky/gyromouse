@@ -73,14 +73,14 @@ impl Settings {
                 let rotate = mode != StickMode::FlickOnly;
                 Box::new(FlickStick::new(flick, rotate))
             }
-            StickMode::MouseRing => todo!(),
-            StickMode::MouseArea => todo!(),
+            StickMode::MouseRing => todo!("Mouse ring stick is unimplemented for now"),
+            StickMode::MouseArea => todo!("Mouse area stick is unimplemented for now"),
             StickMode::NoMouse => Box::new(if left {
                 ButtonStick::left(self.left_ring_mode)
             } else {
                 ButtonStick::right(self.right_ring_mode)
             }),
-            StickMode::ScrollWheel => todo!(),
+            StickMode::ScrollWheel => todo!("Scoll wheel stick is unimplemented for now"),
         }
     }
 }

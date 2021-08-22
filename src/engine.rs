@@ -186,9 +186,9 @@ impl Gyro {
             space_mapper: match settings.gyro.space {
                 GyroSpace::Local => Box::new(LocalSpace::default()),
                 GyroSpace::WorldTurn => Box::new(WorldSpace::default()),
-                GyroSpace::WorldLean => todo!(),
+                GyroSpace::WorldLean => todo!("World Lean is unimplemented for now"),
                 GyroSpace::PlayerTurn => Box::new(PlayerSpace::default()),
-                GyroSpace::PlayerLean => todo!(),
+                GyroSpace::PlayerLean => todo!("Player Lean is unimplemented for now"),
             },
             gyromouse: GyroMouse::default(),
         }
