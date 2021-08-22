@@ -65,7 +65,7 @@ jobs:
         run: rustup component add clippy
       - uses: Swatinem/rust-cache@v1
         with:
-          key: v4
+          key: v5
 
       - name: ⚙️ Install cargo-vcpkg
         run: cargo vcpkg --version || cargo install cargo-vcpkg

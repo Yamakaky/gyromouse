@@ -13,6 +13,9 @@ hidapi = ["hid-gamepad", "joycon"]
 sdl2-static = ["sdl2", "sdl2/static-link", "sdl2/use-vcpkg"]
 vgamepad = ["virtual-gamepad"]
 
+[profile.release]
+lto = true
+
 [dependencies]
 anyhow = { version = "1.0", features = ["backtrace"] }
 cgmath = "0.18"
