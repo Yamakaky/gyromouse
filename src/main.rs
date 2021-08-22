@@ -41,7 +41,13 @@ impl ClickType {
 }
 
 fn main() {
-    human_panic::setup_panic!();
+    // https://github.com/rust-cli/human-panic/issues/77
+    human_panic::setup_panic!(human_panic::Metadata {
+        version: env!("CARGO_PKG_VERSION").into(),
+        name: env!("CARGO_PKG_NAME").into(),
+        authors: env!("CARGO_PKG_AUTHORS").replace(":", ", ").into(),
+        homepage: env!("CARGO_PKG_REPOSITORY").into(),
+    });
 
     if let Err(e) = do_main() {
         eprintln!("Error: {:?}", e);

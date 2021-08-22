@@ -5,8 +5,6 @@ authors = ["Mikaël Fourrier <mikael.fourrier@pm.me>"]
 edition = "2018"
 description = "Input mapper for gamepads in game and desktop"
 repository = "https://github.com/Yamakaky/gyromouse"
-# https://github.com/rust-cli/human-panic/issues/77
-homepage = "https://github.com/Yamakaky/gyromouse"
 resolver = "2"
 
 [features]
