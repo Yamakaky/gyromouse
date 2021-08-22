@@ -48,13 +48,14 @@ impl Engine {
             #[cfg(feature = "vgamepad")]
             // TODO: Conditional virtual gamepad creation
             // Only create if option is enabled
-            gamepad: virtual_gamepad::new(virtual_gamepad::GamepadType::DS4)
-                .map(|vg| -> Box<dyn virtual_gamepad::Backend> { Box::new(vg) })
-                .map_err(|e| {
-                    eprintln!("Error initializing the virtual gamepad: {}", e);
-                    e
-                })
-                .ok(),
+            //gamepad: virtual_gamepad::new(virtual_gamepad::GamepadType::DS4)
+            //    .map(|vg| -> Box<dyn virtual_gamepad::Backend> { Box::new(vg) })
+            //    .map_err(|e| {
+            //        eprintln!("Error initializing the virtual gamepad: {}", e);
+            //        e
+            //    })
+            //    .ok(),
+            gamepad: None,
         })
     }
 
