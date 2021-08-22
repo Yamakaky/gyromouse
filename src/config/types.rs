@@ -45,8 +45,11 @@ impl From<(ActionType, ClickType)> for ExtAction {
             ActionType::Mouse(k) => ExtAction::MousePress(k, b),
             ActionType::Special(SpecialKey::GyroOn) => ExtAction::GyroOn(b),
             ActionType::Special(SpecialKey::GyroOff) => ExtAction::GyroOff(b),
-            ActionType::Special(SpecialKey::None) => unimplemented!(),
-            ActionType::Special(_) => unimplemented!(),
+            ActionType::Special(s) => {
+                // TODO: Handle every special key.
+                eprintln!("Warning: special key {:?} is unimplemented", s);
+                ExtAction::None
+            }
             #[cfg(feature = "vgamepad")]
             ActionType::Gamepad(k) => ExtAction::GamepadKeyPress(k, b),
         }

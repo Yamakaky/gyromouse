@@ -14,6 +14,7 @@ pub enum Action {
 
 #[derive(Debug, Copy, Clone)]
 pub enum ExtAction {
+    None,
     KeyPress(Key, ClickType),
     MousePress(MouseButton, ClickType),
     #[cfg(feature = "vgamepad")]
@@ -158,7 +159,7 @@ impl<V: Default> Enum<V> for MapKey {
         } else if value < MAP_KEY_SIZE {
             <VirtualKey as Enum<()>>::from_usize(value - JOYKEY_SIZE).into()
         } else {
-            unimplemented!()
+            unreachable!("MapKey value cannot be > MAP_KEY_SIZE");
         }
     }
 

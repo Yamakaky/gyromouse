@@ -82,7 +82,10 @@ fn map_key(layer: &mut Layer, actions: &[JSMAction]) {
                 );
                 layer.on_up = convert_action_mod(action, ClickType::Release);
             }
-            Turbo => unimplemented!(),
+            Turbo => {
+                // TODO: Implement turbo keys
+                eprintln!("Warning: Turbo event modifier is unsupported for now.");
+            }
         }
         first = false;
     }
@@ -115,13 +118,19 @@ pub fn parse_file<'a>(
                 mapping.get(k1, 0).on_up = Some(Action::Layer(k1.to_layer(), false));
                 map_key(mapping.get(k2, k1.to_layer()), actions);
             }
-            Cmd::Map(Key::Simul(_k1, _k2), ref _actions) => unimplemented!(),
+            Cmd::Map(Key::Simul(_k1, _k2), ref _actions) => {
+                // TODO: Support simultaneous key presses
+                eprintln!("Warning: simultaneous keys are unsupported for now");
+            }
             Cmd::Setting(setting) => settings.apply(setting),
             Cmd::Reset => {
                 settings.reset();
                 mapping.reset()
             }
-            Cmd::Special(_) => unimplemented!(),
+            Cmd::Special(s) => {
+                // TODO: Support special key presses
+                eprintln!("Warning: special key {:?} is unsupported for now", s);
+            }
         }
     }
     Ok(())

@@ -29,17 +29,6 @@ pub enum ClickType {
     Toggle,
 }
 
-impl ClickType {
-    pub fn apply(self, val: bool) -> bool {
-        match self {
-            ClickType::Press => false,
-            ClickType::Release => true,
-            ClickType::Click => unimplemented!(),
-            ClickType::Toggle => !val,
-        }
-    }
-}
-
 fn main() {
     // https://github.com/rust-cli/human-panic/issues/77
     human_panic::setup_panic!(human_panic::Metadata {

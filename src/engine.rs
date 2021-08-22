@@ -91,20 +91,31 @@ impl Engine {
         for action in self.buttons.tick(now) {
             match action {
                 ExtAction::GyroOn(ClickType::Press) | ExtAction::GyroOff(ClickType::Release) => {
-                    self.gyro.enabled = true
+                    self.gyro.enabled = true;
                 }
                 ExtAction::GyroOn(ClickType::Release) | ExtAction::GyroOff(ClickType::Press) => {
-                    self.gyro.enabled = false
+                    self.gyro.enabled = false;
                 }
-                ExtAction::GyroOn(_) | ExtAction::GyroOff(_) => unimplemented!(),
+                ExtAction::GyroOn(ClickType::Toggle) | ExtAction::GyroOff(ClickType::Toggle) => {
+                    self.gyro.enabled = !self.gyro.enabled;
+                }
+                ExtAction::GyroOn(ClickType::Click) | ExtAction::GyroOff(ClickType::Click) => {
+                    eprintln!("Warning: event type Click has no effect on gyro on/off");
+                }
                 ExtAction::KeyPress(c, ClickType::Click) => self.mouse.enigo().key_click(c),
                 ExtAction::KeyPress(c, ClickType::Press) => self.mouse.enigo().key_down(c),
                 ExtAction::KeyPress(c, ClickType::Release) => self.mouse.enigo().key_up(c),
-                ExtAction::KeyPress(_, ClickType::Toggle) => unimplemented!(),
+                ExtAction::KeyPress(_, ClickType::Toggle) => {
+                    // TODO: Implement key press toggle
+                    eprintln!("Warning: key press toggle is not implemented");
+                }
                 ExtAction::MousePress(c, ClickType::Click) => self.mouse.enigo().mouse_click(c),
                 ExtAction::MousePress(c, ClickType::Press) => self.mouse.enigo().mouse_down(c),
                 ExtAction::MousePress(c, ClickType::Release) => self.mouse.enigo().mouse_up(c),
-                ExtAction::MousePress(_, ClickType::Toggle) => unimplemented!(),
+                ExtAction::MousePress(_, ClickType::Toggle) => {
+                    // TODO: Implement mouse click toggle
+                    eprintln!("Warning: mouse click toggle is not implemented");
+                }
                 #[cfg(feature = "vgamepad")]
                 ExtAction::GamepadKeyPress(key, ClickType::Press) => {
                     if let Some(gamepad) = &mut self.gamepad {
@@ -121,6 +132,7 @@ impl Engine {
                 }
                 #[cfg(feature = "vgamepad")]
                 ExtAction::GamepadKeyPress(_, _) => todo!(),
+                ExtAction::None => {}
             }
         }
         #[cfg(feature = "vgamepad")]
