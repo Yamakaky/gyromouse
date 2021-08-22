@@ -129,7 +129,9 @@ pub enum MapKey {
 
 impl MapKey {
     pub fn to_layer(self) -> u8 {
-        <Self as Enum<()>>::to_usize(self).try_into().unwrap()
+        <Self as Enum<()>>::to_usize(self)
+            .try_into()
+            .expect("error converting MapKey to u8")
     }
 }
 

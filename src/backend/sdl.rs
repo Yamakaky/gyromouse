@@ -5,7 +5,7 @@ use std::{
 };
 
 use anyhow::{bail, Result};
-use cgmath::{vec2, vec3, Vector3};
+use cgmath::{vec2, Vector3};
 use hid_gamepad_types::{Acceleration, JoyKey, Motion, RotationSpeed};
 use sdl2::{
     self,
@@ -37,8 +37,10 @@ impl SDLBackend {
         sdl2::hint::set("SDL_JOYSTICK_HIDAPI_PS4_RUMBLE", "1");
         sdl2::hint::set("SDL_JOYSTICK_HIDAPI_JOY_CONS", "1");
         sdl2::hint::set("SDL_GAMECONTROLLER_USE_BUTTON_LABELS", "0");
-        let sdl = sdl2::init().unwrap();
-        let game_controller_system = sdl.game_controller().unwrap();
+        let sdl = sdl2::init().expect("can't initialize SDL");
+        let game_controller_system = sdl
+            .game_controller()
+            .expect("can't initialize SDL game controller subsystem");
         Ok(Self {
             sdl,
             game_controller_system,
@@ -71,10 +73,18 @@ impl Backend for SDLBackend {
         settings: Settings,
         bindings: Buttons,
     ) -> anyhow::Result<()> {
-        if self.game_controller_system.num_joysticks().unwrap() == 0 {
+        if self
+            .game_controller_system
+            .num_joysticks()
+            .expect("can't enumerate the joysticks")
+            == 0
+        {
             println!("Waiting for a game controller to connect...");
         }
-        let mut event_pump = self.sdl.event_pump().unwrap();
+        let mut event_pump = self
+            .sdl
+            .event_pump()
+            .expect("can't create the SDL event pump");
 
         let mut controllers: HashMap<u32, ControllerState> = HashMap::new();
 
@@ -173,11 +183,11 @@ impl Backend for SDLBackend {
                 let engine = &mut controller.engine;
                 let mut left = vec2(c.axis(Axis::LeftX), c.axis(Axis::LeftY))
                     .cast::<f64>()
-                    .unwrap()
+                    .expect("can't cast i16 to f64")
                     / (i16::MAX as f64);
                 let mut right = vec2(c.axis(Axis::RightX), c.axis(Axis::RightY))
                     .cast::<f64>()
-                    .unwrap()
+                    .expect("can't cast i16 to f64")
                     / (i16::MAX as f64);
 
                 // In SDL, -..+ y is top..bottom
@@ -192,12 +202,19 @@ impl Backend for SDLBackend {
                 {
                     let mut accel = [0.; 3];
                     c.sensor_get_data(SensorType::Accelerometer, &mut accel)?;
-                    let acceleration =
-                        Acceleration::from(Vector3::from(accel).cast::<f64>().unwrap() / 9.82);
+                    let acceleration = Acceleration::from(
+                        Vector3::from(accel)
+                            .cast::<f64>()
+                            .expect("can't cast f32 to f64")
+                            / 9.82,
+                    );
                     let mut gyro = [0.; 3];
                     c.sensor_get_data(SensorType::Gyroscope, &mut gyro)?;
                     let rotation_speed = RotationSpeed::from(
-                        vec3(gyro[0] as f64, gyro[1] as f64, gyro[2] as f64) / std::f64::consts::PI
+                        Vector3::from(gyro)
+                            .cast::<f64>()
+                            .expect("can't cast f32 to f64")
+                            / std::f64::consts::PI
                             * 180.,
                     );
 

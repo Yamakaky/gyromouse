@@ -13,7 +13,7 @@ mod space_mapper;
 
 use std::{fs::File, io::Read};
 
-use anyhow::Context;
+use anyhow::{bail, Context};
 use backend::Backend;
 use clap::Clap;
 use nom_supreme::error::{BaseErrorKind, ErrorTree};
@@ -55,7 +55,9 @@ fn main() {
 
     // Keep cmd.exe opened
     #[cfg(windows)]
-    let _ = std::io::stdin().read(&mut [0u8]).unwrap();
+    let _ = std::io::stdin()
+        .read(&mut [0u8])
+        .expect("can't wait for end of program");
 }
 
 fn do_main() -> anyhow::Result<()> {
@@ -68,8 +70,7 @@ fn do_main() -> anyhow::Result<()> {
         #[cfg(feature = "hidapi")]
         Some(opts::Backend::Hid) | None => Box::new(backend::hidapi::HidapiBackend::new()?),
         Some(_) | None => {
-            println!("A backend must be enabled");
-            return Ok(());
+            bail!("A backend must be enabled");
         }
     };
 
