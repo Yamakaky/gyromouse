@@ -16,7 +16,6 @@ use nom::{
 };
 use nom_supreme::{
     error::ErrorTree,
-    final_parser::{final_parser, Location},
     multi::collect_separated_terminated,
     parser_ext::ParserExt,
     tag::{
@@ -31,7 +30,8 @@ use crate::{
 };
 
 type Input<'a> = &'a str;
-type IRes<'a, O> = IResult<Input<'a>, O, ErrorTree<Input<'a>>>;
+type Error<'a> = ErrorTree<Input<'a>>;
+type IRes<'a, O> = IResult<Input<'a>, O, Error<'a>>;
 
 fn convert_action_mod(action: &JSMAction, default: ClickType) -> Option<Action> {
     if let ActionType::Special(s) = action.action {
@@ -95,11 +95,12 @@ fn map_key(layer: &mut Layer, actions: &[JSMAction]) {
 }
 
 pub fn parse_file<'a>(
-    content: &'a str,
+    source: &'a str,
     settings: &mut Settings,
     mapping: &mut Buttons,
-) -> Result<(), ErrorTree<Location>> {
-    for cmd in jsm_parse(content)? {
+) -> Vec<nom::Err<Error<'a>>> {
+    let (cmds, errors) = jsm_parse(source);
+    for cmd in cmds {
         match cmd {
             Cmd::Map(Key::Simple(key), ref actions) => map_key(mapping.get(key, 0), actions),
 
@@ -136,7 +137,7 @@ pub fn parse_file<'a>(
             }
         }
     }
-    Ok(())
+    errors
 }
 
 fn keys(input: Input) -> IRes<'_, Key> {
@@ -436,11 +437,26 @@ fn line(input: Input) -> IRes<'_, Option<Cmd>> {
     Ok((input, Some(cmd)))
 }
 
-pub fn jsm_parse(input: Input) -> Result<Vec<Cmd>, ErrorTree<Location>> {
-    final_parser(
-        collect_separated_terminated(alt((empty_line, line)).context("line"), line_ending, eof)
-            .map(|cmds: Vec<_>| cmds.into_iter().flatten().collect()),
-    )(input)
+pub fn jsm_parse(input: Input) -> (Vec<Cmd>, Vec<nom::Err<Error>>) {
+    let mut errors = Vec::new();
+
+    let line = |input| -> IRes<'_, Option<Cmd>> {
+        match alt((empty_line, line))(input) {
+            Ok(ok) => Ok(ok),
+            Err(e) => {
+                errors.push(e);
+                let res: IRes<'_, &str> = not_line_ending(input);
+                let (rest, _) = res.expect("not_line ending cannot fail");
+                Ok((rest, None))
+            }
+        }
+    };
+
+    let cmds = collect_separated_terminated(line, line_ending, eof)
+        .parse(input)
+        .map(|(_, cmds): (_, Vec<_>)| cmds.into_iter().flatten().collect())
+        .expect("parser cannot fail");
+    (cmds, errors)
 }
 
 fn mapkey(input: Input) -> IRes<'_, MapKey> {

@@ -16,7 +16,10 @@ use std::{fs::File, io::Read};
 use anyhow::{bail, Context};
 use backend::Backend;
 use clap::Clap;
-use nom_supreme::error::{BaseErrorKind, ErrorTree};
+use nom_supreme::{
+    error::{BaseErrorKind, ErrorTree},
+    final_parser::{ExtractContext, Location},
+};
 use opts::Opts;
 
 use crate::{config::settings::Settings, mapping::Buttons, opts::Run};
@@ -76,20 +79,8 @@ fn do_main() -> anyhow::Result<()> {
                 content_file.read_to_string(&mut buf)?;
                 buf
             };
-            match config::parse::parse_file(&content, &mut settings, &mut bindings) {
-                Ok(_) => {}
-                Err(e) => {
-                    eprintln!("Parsing error:");
-                    print_parse_error(
-                        &content,
-                        &e.map_locations(|l| {
-                            let line = content.lines().nth(l.line - 1).expect("should not fail");
-                            format!("line {}, \"{}\"", l.line, line)
-                        }),
-                    );
-                    //dbg!(e);
-                }
-            };
+            let errors = config::parse::parse_file(&content, &mut settings, &mut bindings);
+            print_errors(errors, &content);
             Ok(())
         }
         Some(opts::Cmd::FlickCalibrate) => todo!(),
@@ -128,8 +119,29 @@ fn run(
         content_file.read_to_string(&mut buf)?;
         buf
     };
-    config::parse::parse_file(&content, &mut settings, &mut bindings)?;
+    let errors = config::parse::parse_file(&content, &mut settings, &mut bindings);
+    print_errors(errors, &content);
     backend.run(r, settings, bindings)
+}
+
+fn print_errors(errors: Vec<nom::Err<ErrorTree<&str>>>, content: &str) {
+    for error in errors {
+        match error {
+            nom::Err::Incomplete(_) => todo!(),
+            nom::Err::Error(_) => todo!(),
+            nom::Err::Failure(e) => {
+                let location: ErrorTree<Location> = e.extract_context(content);
+                eprintln!("Parsing error:");
+                print_parse_error(
+                    &content,
+                    &location.map_locations(|l| {
+                        let line = content.lines().nth(l.line - 1).expect("should not fail");
+                        format!("line {}, \"{}\"", l.line, line)
+                    }),
+                );
+            }
+        }
+    }
 }
 
 fn print_parse_error(input: &str, e: &ErrorTree<String>) {

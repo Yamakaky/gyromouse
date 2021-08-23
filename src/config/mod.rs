@@ -7,9 +7,10 @@ mod test {
     use crate::config::parse::jsm_parse;
 
     #[test]
-    fn parse_all_settings() -> anyhow::Result<()> {
+    fn parse_all_settings() {
         let settings_str = include_str!("all-settings-example");
-        let _ = jsm_parse(settings_str)?;
-        Ok(())
+        let (_, errors) = jsm_parse(settings_str);
+        dbg!(&errors);
+        assert!(errors.is_empty());
     }
 }
