@@ -19,7 +19,10 @@ use nom_supreme::{
     final_parser::{final_parser, Location},
     multi::collect_separated_terminated,
     parser_ext::ParserExt,
-    tag::complete::{tag, tag_no_case},
+    tag::{
+        complete::{tag, tag_no_case},
+        TagError,
+    },
 };
 
 use crate::{
@@ -492,8 +495,13 @@ fn virtkey(input: Input) -> IRes<'_, VirtualKey> {
 
 fn keyboardkey(input: Input) -> IRes<'_, enigo::Key> {
     use enigo::Key::*;
-    let char_parse =
-        |input| satisfy(|c| is_alphanumeric(c as u8))(input).map(|(i, x)| (i, Layout(x)));
+    let char_parse = |input| {
+        satisfy(|c| is_alphanumeric(c as u8))(input)
+            .map(|(i, x)| (i, Layout(x)))
+            .map_err(|_: nom::Err<ErrorTree<Input<'_>>>| {
+                nom::Err::Error(ErrorTree::from_tag(input, "a keyboard letter"))
+            })
+    };
     let key_parse = |key, tag| value(key, tag_no_case(tag));
     alt((
         alt((

@@ -79,6 +79,7 @@ fn do_main() -> anyhow::Result<()> {
             match config::parse::parse_file(&content, &mut settings, &mut bindings) {
                 Ok(_) => {}
                 Err(e) => {
+                    eprintln!("Parsing error:");
                     print_parse_error(
                         &content,
                         &e.map_locations(|l| {
@@ -134,30 +135,36 @@ fn run(
 fn print_parse_error(input: &str, e: &ErrorTree<String>) {
     match e {
         ErrorTree::Base { location, kind } => {
-            eprintln!("Error parsing {}: {}", location, kind,);
+            eprint!("  at {}: ", location);
+            match kind {
+                BaseErrorKind::Kind(nom::error::ErrorKind::Float) => println!("expected a number"),
+                k => println!("{}", k),
+            };
         }
-        ErrorTree::Stack { base, contexts } => {
-            eprintln!("{:?}", contexts);
+        ErrorTree::Stack { base, contexts: _ } => {
+            //eprintln!("{:?}", contexts);
             print_parse_error(input, base);
         }
         ErrorTree::Alt(alts) => {
             let mut last_loc = None;
             for alt in alts {
-                if let ErrorTree::Base {
-                    location,
-                    kind: BaseErrorKind::Expected(exp),
-                } = alt
-                {
-                    match last_loc.map(|l: &String| l == location) {
-                        None => print!("  at {}: expected {}", location, exp),
-                        Some(false) => print!("\n  at {}: expected {}", location, exp),
-                        Some(true) => print!(" or {}", exp),
+                match alt {
+                    ErrorTree::Base {
+                        location,
+                        kind: BaseErrorKind::Expected(exp),
+                    } => {
+                        match last_loc.map(|l: &String| l == location) {
+                            None => eprint!("  at {}: expected {}", location, exp),
+                            Some(false) => eprint!("\n  at {}: expected {}", location, exp),
+                            Some(true) => eprint!(" or {}", exp),
+                        }
+                        last_loc = Some(location);
                     }
-                    last_loc = Some(location);
-                } else {
-                    println!();
-                    print_parse_error(input, alt);
-                    last_loc = None;
+                    _ => {
+                        println!();
+                        print_parse_error(input, alt);
+                        last_loc = None;
+                    }
                 }
             }
             println!();
