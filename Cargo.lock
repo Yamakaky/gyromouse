@@ -1097,7 +1097,7 @@ dependencies = [
 [[package]]
 name = "xdo-sys"
 version = "0.1.0"
-source = "git+https://github.com/Yamakaky/xdo-sys#9ac681757bc0a2da44061c10e073e26d4fab47f9"
+source = "git+https://github.com/Yamakaky/xdo-sys#350b8e6837578bf9e8aca14dc3837704ec4424a2"
 dependencies = [
  "cc",
 ]
