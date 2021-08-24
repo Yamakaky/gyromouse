@@ -83,7 +83,7 @@ jobs:
           fcitx-libs-dev libsamplerate0-dev libsndio-dev libwayland-dev \
           libxkbcommon-dev libdrm-dev libgbm-dev \
           \
-          libusb-1.0-0-dev libxdo-dev libbluetooth-dev libudev-dev
+          libusb-1.0-0-dev libxdo-dev libbluetooth-dev libudev-dev libxtst-dev
 
       - name: 🔨 Build SDL
         uses: actions-rs/cargo@v1
