@@ -1,4 +1,4 @@
-use cgmath::{Vector2, Zero};
+use cgmath::{ElementWise, InnerSpace, Vector2, Zero};
 use std::{collections::VecDeque, time::Duration};
 
 use crate::{config::settings::GyroSettings, mouse::MouseMovement};
@@ -93,7 +93,7 @@ impl GyroMouse {
             rot = self.tight(settings, rot);
         }
         let sens = self.get_sens(settings, rot);
-        MouseMovement::from_vec_deg(rot * sens * dt.as_secs_f64())
+        MouseMovement::from_vec_deg(rot.mul_element_wise(sens) * dt.as_secs_f64())
     }
 
     fn tiered_smooth(
@@ -134,8 +134,8 @@ impl GyroMouse {
         }
     }
 
-    fn get_sens(&self, settings: &GyroSettings, rot: Vector2<f64>) -> f64 {
-        if settings.slow_sens > 0. && settings.fast_sens > 0. {
+    fn get_sens(&self, settings: &GyroSettings, rot: Vector2<f64>) -> Vector2<f64> {
+        if settings.slow_sens.magnitude2() > 0. && settings.slow_sens.magnitude2() > 0. {
             let magnitude = (rot.x.powf(2.) + rot.y.powf(2.)).sqrt();
             let factor = ((magnitude - settings.slow_threshold)
                 / (settings.fast_threshold - settings.slow_threshold))

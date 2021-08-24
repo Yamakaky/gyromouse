@@ -196,11 +196,13 @@ SCROLL_SENS = 10
 ## Gyro
 
 GYRO_SENS = 1.1103
-#GYRO_SENS = 1.1103    2.
+GYRO_SENS = 1.1103    2.
 MIN_gyro_THRESHOLD = 2
 MAX_gyro_THRESHOLD = 1.10
 MIN_gyro_SENS = 1.
+MIN_gyro_SENS = 1. 1.
 MAX_gyro_SENS = 1.10
+MAX_gyro_SENS = 1.10 1.
 GYRO_SPACE = player_turn
 GYRO_SPACE = player_lean
 GYRO_SPACE = WORLD_turn

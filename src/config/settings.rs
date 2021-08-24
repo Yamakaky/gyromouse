@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use cgmath::Deg;
+use cgmath::{vec2, Deg, Vector2, Zero};
 
 use crate::joystick::{ButtonStick, CameraStick, FlickStick, Stick};
 
@@ -205,7 +205,7 @@ pub struct GyroSettings {
     /// Sensitivity to use without acceleration.
     ///
     /// <http://gyrowiki.jibbsmart.com/blog:good-gyro-controls-part-1:the-gyro-is-a-mouse#toc5>
-    pub sens: f64,
+    pub sens: Vector2<f64>,
     pub space: GyroSpace,
     /// Stabilize slow movements
     ///
@@ -221,23 +221,23 @@ pub struct GyroSettings {
     ///
     /// <http://gyrowiki.jibbsmart.com/blog:good-gyro-controls-part-1:the-gyro-is-a-mouse#toc7>
     pub slow_threshold: f64,
-    pub slow_sens: f64,
+    pub slow_sens: Vector2<f64>,
     pub fast_threshold: f64,
-    pub fast_sens: f64,
+    pub fast_sens: Vector2<f64>,
 }
 
 impl Default for GyroSettings {
     fn default() -> Self {
         Self {
-            sens: 1.,
+            sens: vec2(1., 1.),
             space: GyroSpace::PlayerTurn,
             cutoff_speed: 0.,
             cutoff_recovery: 0.,
             smooth_threshold: 0.,
             smooth_time: Duration::from_millis(125),
-            slow_sens: 0.,
+            slow_sens: Vector2::zero(),
             slow_threshold: 0.,
-            fast_sens: 0.,
+            fast_sens: Vector2::zero(),
             fast_threshold: 0.,
         }
     }
@@ -246,10 +246,16 @@ impl Default for GyroSettings {
 impl GyroSettings {
     fn apply(&mut self, setting: GyroSetting) {
         match setting {
-            GyroSetting::Sensitivity(s) => self.sens = s,
-            GyroSetting::MinSens(s) => self.slow_sens = s,
+            GyroSetting::Sensitivity(x, y) => {
+                self.sens = vec2(x, y.unwrap_or(x));
+            }
+            GyroSetting::MinSens(x, y) => {
+                self.slow_sens = vec2(x, y.unwrap_or(x));
+            }
             GyroSetting::MinThreshold(s) => self.slow_threshold = s,
-            GyroSetting::MaxSens(s) => self.fast_sens = s,
+            GyroSetting::MaxSens(x, y) => {
+                self.fast_sens = vec2(x, y.unwrap_or(x));
+            }
             GyroSetting::MaxThreshold(s) => self.fast_threshold = s,
             GyroSetting::Space(s) => self.space = s,
             GyroSetting::CutoffSpeed(s) => self.cutoff_speed = s,

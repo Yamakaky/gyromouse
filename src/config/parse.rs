@@ -228,6 +228,22 @@ fn f64_setting<Output>(
     }
 }
 
+fn double_f64_setting<Output>(
+    tag: &'static str,
+    value_map: impl Fn(f64, Option<f64>) -> Output,
+) -> impl FnMut(Input) -> IRes<'_, Output> {
+    move |input| {
+        let (input, _) = tag_no_case(tag)(input)?;
+        let (input, v1) = float.preceded_by(equal_with_space).cut().parse(input)?;
+        let (input, v2) = float
+            .preceded_by(equal_with_space)
+            .opt()
+            .cut()
+            .parse(input)?;
+        Ok((input, value_map(v1 as f64, v2.map(|v| v as f64))))
+    }
+}
+
 fn stick_setting(input: Input) -> IRes<'_, StickSetting> {
     alt((
         f64_setting("STICK_DEADZONE_INNER", StickSetting::Deadzone),
@@ -304,10 +320,10 @@ fn ring_mode(input: Input) -> IRes<'_, Setting> {
 fn gyro_setting(input: Input) -> IRes<'_, Setting> {
     map(
         alt((
-            f64_setting("GYRO_SENS", GyroSetting::Sensitivity),
-            f64_setting("MIN_GYRO_SENS", GyroSetting::MinSens),
+            double_f64_setting("GYRO_SENS", GyroSetting::Sensitivity),
+            double_f64_setting("MIN_GYRO_SENS", GyroSetting::MinSens),
             f64_setting("MIN_GYRO_THRESHOLD", GyroSetting::MinThreshold),
-            f64_setting("MAX_GYRO_SENS", GyroSetting::MaxSens),
+            double_f64_setting("MAX_GYRO_SENS", GyroSetting::MaxSens),
             f64_setting("MAX_GYRO_THRESHOLD", GyroSetting::MaxThreshold),
             gyro_space,
             f64_setting("GYRO_CUTOFF_SPEED", GyroSetting::CutoffSpeed),
