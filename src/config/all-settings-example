@@ -6,6 +6,108 @@ W = a # comment
 
 ## Digital inputs
 
+### lhs
+
+UP = a
+DOWN = a
+LEFT = a
+RIGHT = a
+L = a
+ZL = a
+R = a
+ZR = a
+#ZRF = a
+#ZLF = a
+- = a
++ = a
+HOME = a
+CAPTURE = a
+#LSL = a
+#RSL = a
+#LSR = a
+#RSR = a
+L3 = a
+R3 = a
+N = a
+E = a
+S = a
+W = a
+LUP = a
+LDOWN = a
+LLEFT = a
+LRIGHT = a
+LRING = a
+RUP = a
+RDOWN = a
+RLEFT = a
+RRIGHT = a
+RRING = a
+#MUP = a
+#MDOWN = a
+#MLEFT = a
+#MRIGHT = a
+#MRING = a
+#LEAN_LEFT = a
+#LEAN_RIGHT = a
+#TOUCH = a
+#MIC = a
+
+### rhs
+
+W = 3
+#W = N7
+#W = ADD SUBTRACT DIVIDE MULTIPLY DECIMAL
+W = F7
+#W = F27
+W = I
+W = Z
+W = UP DOWN LEFT RIGHT
+#W = LSHIFT RSHIFT LALT RALT LCONTROL RCONTROL
+W = SHIFT ALT CONTROL
+W = LWINDOWS RWINDOWS
+#W = CONTEXT
+W = TAB ESC ENTER SPACE BACKSPACE
+#W =CAPS_LOCK SCROLL_LOCK NUM_LOCK
+#W = PAGEUP PAGEDOWN HOME END INSERT DELETE
+W = LMOUSE MMOUSE RMOUSE
+W = BMOUSE FMOUSE
+#W = SCROLLUP SCROLLDOWN
+#W = VOLUME_UP VOLUME_DOWN MUTE
+#W = NEXT_TRACK PREV_TRACK STOP_TRACK PLAY_PAUSE
+#W = SCREENSHOT
+W = NONE
+#W = DEFAULT
+#W = CALIBRATE
+W = GYRO_ON GYRO_OFF
+#W = GYRO_INVERT
+W = GYRO_INV_X
+W = GYRO_INV_Y
+W = GYRO_TRACKBALL
+#W = GYRO_TRACK_X
+#W = GYRO_TRACK_Y
+#W = ; ' , . / \ [ ] + - `
+#W = "any console command"
+#W = SMALL_RUMBLE
+#W = BIG_RUMBLE
+#W = R123F
+
+### Combination
+
+W,E = a
+W,W = a
+W+E = a
+
+### Modifiers
+
+ZL = ^RMOUSE\ RMOUSE_ # ADS toggle on tap and release the toggle on hold
+E  = !C\ !C/          # Convert in game toggle crouch to regular press
+UP = !1\ 1            # Convert Batarang throw double press to hold press
+W  = R E\             # In Halo MCC, reload on tap but apply E right away to cover for in-game hold processing
+-,S = SPACE+          # Turbo press for button mash QTEs. No one likes to button mash :(
+R3 = !1\ LMOUSE+ !Q/  # Half life melee button
+UP,UP = !ENTER\ SHIFT\ !G\ !L\ !SPACE\ !H\ !F\ !ENTER/ # Pre recorded message
+UP,E = BACKSPACE+
+
 ## Triggers
 
 TRIGGER_threSHOLD = 0.5
