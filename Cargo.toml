@@ -20,7 +20,7 @@ lto = true
 anyhow = { version = "1.0", features = ["backtrace"] }
 cgmath = "0.18"
 clap = "3.0.0-beta.2"
-enigo = "0.0"
+enigo = { git = "https://github.com/Yamakaky/enigo", branch = "xdo-sys" }
 # see https://gitlab.com/KonradBorowski/enum-map/-/issues/20
 enum-map = "0.6"
 hid-gamepad-types = { git = "https://github.com/Yamakaky/joy" }
