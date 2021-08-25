@@ -136,7 +136,7 @@ fn print_errors(errors: Vec<nom::Err<ErrorTree<&str>>>, content: &str) {
                     &content,
                     &location.map_locations(|l| {
                         let line = content.lines().nth(l.line - 1).expect("should not fail");
-                        format!("line {}, \"{}\"", l.line, line)
+                        format!("line {} column {} (\"{}\")", l.line, l.column, line)
                     }),
                 );
             }

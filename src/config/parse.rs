@@ -235,11 +235,7 @@ fn double_f64_setting<Output>(
     move |input| {
         let (input, _) = tag_no_case(tag)(input)?;
         let (input, v1) = float.preceded_by(equal_with_space).cut().parse(input)?;
-        let (input, v2) = float
-            .preceded_by(equal_with_space)
-            .opt()
-            .cut()
-            .parse(input)?;
+        let (input, v2) = float.preceded_by(space1.cut()).opt().cut().parse(input)?;
         Ok((input, value_map(v1 as f64, v2.map(|v| v as f64))))
     }
 }
@@ -417,7 +413,7 @@ fn mouse_setting(input: Input) -> IRes<MouseSetting> {
 
 fn equal_with_space(input: Input) -> IRes<'_, ()> {
     let (input, _) = space0(input)?;
-    let (input, _) = tag("=")(input)?;
+    let (input, _) = tag("=").cut().parse(input)?;
     let (input, _) = space0(input)?;
     Ok((input, ()))
 }
