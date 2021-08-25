@@ -11,7 +11,7 @@ use nom::{
     },
     combinator::{eof, map, opt, peek, value},
     multi::separated_list1,
-    number::complete::float,
+    number::complete::double,
     IResult, Parser,
 };
 use nom_supreme::{
@@ -149,8 +149,8 @@ fn f64_setting<Output>(
 ) -> impl FnMut(Input) -> IRes<'_, Output> {
     move |input| {
         let (input, _) = tag_no_case(tag)(input)?;
-        let (input, val) = float.preceded_by(equal_with_space).cut().parse(input)?;
-        Ok((input, value_map(val as f64)))
+        let (input, val) = double.preceded_by(equal_with_space).cut().parse(input)?;
+        Ok((input, value_map(val)))
     }
 }
 
@@ -160,9 +160,9 @@ fn double_f64_setting<Output>(
 ) -> impl FnMut(Input) -> IRes<'_, Output> {
     move |input| {
         let (input, _) = tag_no_case(tag)(input)?;
-        let (input, v1) = equal_with_space.precedes(float).cut().parse(input)?;
-        let (input, v2) = opt(space1.precedes(float)).cut().parse(input)?;
-        Ok((input, value_map(v1 as f64, v2.map(|v| v as f64))))
+        let (input, v1) = equal_with_space.precedes(double).cut().parse(input)?;
+        let (input, v2) = opt(space1.precedes(double)).cut().parse(input)?;
+        Ok((input, value_map(v1, v2)))
     }
 }
 
