@@ -125,6 +125,7 @@ fn action(input: Input) -> IRes<'_, JSMAction> {
 fn binding(input: Input) -> IRes<'_, Cmd> {
     let (input, key) = keys.context("parse keys").parse(input)?;
     let (input, actions) = equal_with_space
+        .cut()
         .precedes(separated_list1(space1, action).context("parse actions"))
         .cut()
         .parse(input)?;
