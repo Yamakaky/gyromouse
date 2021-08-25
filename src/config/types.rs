@@ -109,8 +109,8 @@ pub enum StickSetting {
 pub enum AimStickSetting {
     Sens(f64),
     Power(f64),
-    InvertX(bool),
-    InvertY(bool),
+    InvertX(InvertMode),
+    InvertY(InvertMode),
     AccelerationRate(f64),
     AccelerationCap(f64),
 }
@@ -135,6 +135,8 @@ pub enum GyroSetting {
     MaxSens(f64, Option<f64>),
     MaxThreshold(f64),
     Space(GyroSpace),
+    InvertX(InvertMode),
+    InvertY(InvertMode),
     CutoffSpeed(f64),
     CutoffRecovery(f64),
     SmoothThreshold(f64),
@@ -183,4 +185,10 @@ pub enum Cmd {
 pub enum RingMode {
     Inner,
     Outer,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum InvertMode {
+    Normal,
+    Inverted,
 }

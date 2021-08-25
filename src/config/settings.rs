@@ -146,8 +146,8 @@ impl AimStickSettings {
         match setting {
             AimStickSetting::Sens(s) => self.sens_dps = s,
             AimStickSetting::Power(s) => self.power = s,
-            AimStickSetting::InvertX(v) => self.invert_x = v,
-            AimStickSetting::InvertY(v) => self.invert_y = v,
+            AimStickSetting::InvertX(v) => self.invert_x = v == InvertMode::Inverted,
+            AimStickSetting::InvertY(v) => self.invert_y = v == InvertMode::Inverted,
             AimStickSetting::AccelerationRate(s) => self.acceleration_rate = s,
             AimStickSetting::AccelerationCap(s) => self.acceleration_cap = s,
         }
@@ -206,6 +206,7 @@ pub struct GyroSettings {
     ///
     /// <http://gyrowiki.jibbsmart.com/blog:good-gyro-controls-part-1:the-gyro-is-a-mouse#toc5>
     pub sens: Vector2<f64>,
+    pub invert: (bool, bool),
     pub space: GyroSpace,
     /// Stabilize slow movements
     ///
@@ -230,6 +231,7 @@ impl Default for GyroSettings {
     fn default() -> Self {
         Self {
             sens: vec2(1., 1.),
+            invert: (false, false),
             space: GyroSpace::PlayerTurn,
             cutoff_speed: 0.,
             cutoff_recovery: 0.,
@@ -258,6 +260,8 @@ impl GyroSettings {
             }
             GyroSetting::MaxThreshold(s) => self.fast_threshold = s,
             GyroSetting::Space(s) => self.space = s,
+            GyroSetting::InvertX(b) => self.invert.0 = b == InvertMode::Inverted,
+            GyroSetting::InvertY(b) => self.invert.1 = b == InvertMode::Inverted,
             GyroSetting::CutoffSpeed(s) => self.cutoff_speed = s,
             GyroSetting::CutoffRecovery(s) => self.cutoff_recovery = s,
             GyroSetting::SmoothThreshold(s) => self.smooth_threshold = s,
