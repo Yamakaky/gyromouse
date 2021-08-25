@@ -160,8 +160,8 @@ fn double_f64_setting<Output>(
 ) -> impl FnMut(Input) -> IRes<'_, Output> {
     move |input| {
         let (input, _) = tag_no_case(tag)(input)?;
-        let (input, v1) = float.preceded_by(equal_with_space).cut().parse(input)?;
-        let (input, v2) = float.preceded_by(space1.cut()).opt().cut().parse(input)?;
+        let (input, v1) = equal_with_space.precedes(float).cut().parse(input)?;
+        let (input, v2) = opt(space1.precedes(float)).cut().parse(input)?;
         Ok((input, value_map(v1 as f64, v2.map(|v| v as f64))))
     }
 }
