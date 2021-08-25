@@ -20,21 +20,28 @@ pub fn parse_file<'a>(
             Cmd::Map(Key::Simple(key), ref actions) => map_key(mapping.get(key, 0), actions),
 
             Cmd::Map(Key::Chorded(k1, k2), ref actions) if k1 == k2 => {
-                assert_eq!(
-                    actions.len(),
-                    1,
-                    "only one action is supported on double click"
-                );
-                let action = actions[0];
-                assert_eq!(
-                    action.event_mod, None,
-                    "event modificators not supported on double click"
-                );
-                mapping.get(k1, 0).on_double_click = convert_action_mod(&action, ClickType::Click);
+                // TODO: Correctly handle modifiers for double click
+                for action in actions {
+                    assert_eq!(
+                        action.event_mod, None,
+                        "event modificators not supported on double click"
+                    );
+                    push(
+                        &mut mapping.get(k1, 0).on_double_click,
+                        action,
+                        ClickType::Click,
+                    );
+                }
             }
             Cmd::Map(Key::Chorded(k1, k2), ref actions) => {
-                mapping.get(k1, 0).on_down = Some(Action::Layer(k1.to_layer(), true));
-                mapping.get(k1, 0).on_up = Some(Action::Layer(k1.to_layer(), false));
+                mapping
+                    .get(k1, 0)
+                    .on_down
+                    .push(Action::Layer(k1.to_layer(), true));
+                mapping
+                    .get(k1, 0)
+                    .on_up
+                    .push(Action::Layer(k1.to_layer(), false));
                 map_key(mapping.get(k2, k1.to_layer()), actions);
             }
             Cmd::Map(Key::Simul(_k1, _k2), ref _actions) => {
@@ -86,25 +93,25 @@ fn map_key(layer: &mut Layer, actions: &[JSMAction]) {
             }
         }) {
             Tap => {
-                layer.on_click = convert_action_mod(action, ClickType::Click);
+                push(&mut layer.on_click, action, ClickType::Click);
             }
             Hold => {
-                layer.on_hold_down = convert_action_mod(action, ClickType::Press);
+                push(&mut layer.on_hold_down, action, ClickType::Press);
                 if action.action_mod.is_none() {
-                    layer.on_hold_up = convert_action_mod(action, ClickType::Release);
+                    push(&mut layer.on_hold_up, action, ClickType::Release);
                 }
             }
             Start => {
-                layer.on_down = convert_action_mod(action, ClickType::Press);
+                push(&mut layer.on_down, action, ClickType::Press);
                 if action.action_mod.is_none() {
-                    layer.on_up = convert_action_mod(action, ClickType::Release);
+                    push(&mut layer.on_up, action, ClickType::Release);
                 }
             }
             Release => {
                 if action.action_mod.is_none() {
                     eprintln!("action modifier required on release event type");
                 } else {
-                    layer.on_up = convert_action_mod(action, ClickType::Click);
+                    push(&mut layer.on_up, action, ClickType::Click);
                 }
             }
             Turbo => {
@@ -115,6 +122,13 @@ fn map_key(layer: &mut Layer, actions: &[JSMAction]) {
         first = false;
     }
 }
+
+fn push(actions: &mut Vec<Action>, action: &JSMAction, default: ClickType) {
+    if let Some(action) = convert_action_mod(action, default) {
+        actions.push(action);
+    }
+}
+
 #[cfg(test)]
 mod test {
     use crate::config::parse::jsm_parse;

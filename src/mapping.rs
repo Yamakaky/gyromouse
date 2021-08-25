@@ -51,45 +51,32 @@ impl Default for KeyStatus {
     }
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct Layer {
-    pub on_down: Option<Action>,
-    pub on_up: Option<Action>,
+    pub on_down: Vec<Action>,
+    pub on_up: Vec<Action>,
 
-    pub on_click: Option<Action>,
-    pub on_double_click: Option<Action>,
-    pub on_hold_down: Option<Action>,
-    pub on_hold_up: Option<Action>,
+    pub on_click: Vec<Action>,
+    pub on_double_click: Vec<Action>,
+    pub on_hold_down: Vec<Action>,
+    pub on_hold_up: Vec<Action>,
 }
 
 impl Layer {
     fn is_good(&self) -> bool {
-        self.on_down.is_some()
-            || self.on_up.is_some()
-            || self.on_click.is_some()
-            || self.on_hold_down.is_some()
-            || self.on_hold_up.is_some()
-            || self.on_double_click.is_some()
+        self.on_down.len()
+            + self.on_up.len()
+            + self.on_click.len()
+            + self.on_hold_down.len()
+            + self.on_hold_up.len()
+            + self.on_double_click.len()
+            > 0
     }
 
     fn is_simple_click(&self) -> bool {
-        self.on_hold_down
-            .or(self.on_hold_up)
-            .or(self.on_double_click)
-            .is_none()
-    }
-}
-
-impl Default for Layer {
-    fn default() -> Self {
-        Layer {
-            on_click: None,
-            on_double_click: None,
-            on_down: None,
-            on_up: None,
-            on_hold_down: None,
-            on_hold_up: None,
-        }
+        self.on_hold_down.is_empty()
+            && self.on_hold_up.is_empty()
+            && self.on_double_click.is_empty()
     }
 }
 
@@ -230,10 +217,10 @@ impl Buttons {
             let binding = self.find_binding(key);
             match self.state[key].status {
                 KeyStatus::Down => {
-                    if let Some(ref hold_down) = binding.on_hold_down {
+                    if binding.on_hold_down.len() > 0 {
                         if now.duration_since(self.state[key].last_update) >= self.hold_delay {
-                            Self::action(
-                                hold_down,
+                            Self::actions(
+                                &binding.on_hold_down,
                                 &mut self.current_layers,
                                 &mut self.ext_actions,
                             );
@@ -244,7 +231,7 @@ impl Buttons {
                 KeyStatus::DoubleUp => {
                     if now.duration_since(self.state[key].last_update) >= self.double_click_interval
                     {
-                        Self::maybe_click(
+                        Self::maybe_clicks(
                             &binding,
                             &mut self.current_layers,
                             &mut self.ext_actions,
@@ -264,11 +251,13 @@ impl Buttons {
             return;
         }
         let binding = self.find_binding(key);
-        if let Some(ref down) = binding.on_down {
-            Self::action(down, &mut self.current_layers, &mut self.ext_actions);
-        }
+        Self::actions(
+            &binding.on_down,
+            &mut self.current_layers,
+            &mut self.ext_actions,
+        );
         if binding.is_simple_click() {
-            Self::maybe_click(&binding, &mut self.current_layers, &mut self.ext_actions);
+            Self::maybe_clicks(&binding, &mut self.current_layers, &mut self.ext_actions);
         }
         self.state[key].status = match self.state[key].status {
             KeyStatus::DoubleUp
@@ -277,7 +266,7 @@ impl Buttons {
                 KeyStatus::DoubleDown
             }
             KeyStatus::DoubleUp => {
-                Self::maybe_click(&binding, &mut self.current_layers, &mut self.ext_actions);
+                Self::maybe_clicks(&binding, &mut self.current_layers, &mut self.ext_actions);
                 KeyStatus::Down
             }
             KeyStatus::Up => KeyStatus::Down,
@@ -292,18 +281,24 @@ impl Buttons {
             return;
         }
         let binding = self.find_binding(key);
-        if let Some(ref up) = binding.on_up {
-            Self::action(up, &mut self.current_layers, &mut self.ext_actions);
-        }
+        Self::actions(
+            &binding.on_up,
+            &mut self.current_layers,
+            &mut self.ext_actions,
+        );
         let mut new_status = KeyStatus::Up;
         if !binding.is_simple_click() {
-            if binding.on_hold_up.is_none()
+            if binding.on_hold_up.is_empty()
                 || now.duration_since(self.state[key].last_update) < self.hold_delay
             {
-                if let Some(ref double) = binding.on_double_click {
+                if binding.on_double_click.len() > 0 {
                     match self.state[key].status {
                         KeyStatus::DoubleDown => {
-                            Self::action(double, &mut self.current_layers, &mut self.ext_actions);
+                            Self::actions(
+                                &binding.on_double_click,
+                                &mut self.current_layers,
+                                &mut self.ext_actions,
+                            );
                             new_status = KeyStatus::Up;
                         }
                         KeyStatus::Down => {
@@ -312,10 +307,14 @@ impl Buttons {
                         _ => unreachable!(),
                     }
                 } else {
-                    Self::maybe_click(&binding, &mut self.current_layers, &mut self.ext_actions);
+                    Self::maybe_clicks(&binding, &mut self.current_layers, &mut self.ext_actions);
                 }
-            } else if let Some(ref hold_up) = binding.on_hold_up {
-                Self::action(hold_up, &mut self.current_layers, &mut self.ext_actions);
+            } else if binding.on_hold_up.len() > 0 {
+                Self::actions(
+                    &binding.on_hold_up,
+                    &mut self.current_layers,
+                    &mut self.ext_actions,
+                );
             }
         }
         self.state[key].status = new_status;
@@ -331,14 +330,12 @@ impl Buttons {
         }
     }
 
-    fn maybe_click(
+    fn maybe_clicks(
         binding: &Layer,
         current_layers: &mut Vec<u8>,
         ext_actions: &mut Vec<ExtAction>,
     ) {
-        if let Some(ref click) = binding.on_click {
-            Self::action(click, current_layers, ext_actions);
-        }
+        Self::actions(&binding.on_click, current_layers, ext_actions);
     }
 
     fn find_binding(&self, key: MapKey) -> Layer {
@@ -346,25 +343,28 @@ impl Buttons {
         for i in self.current_layers.iter().rev() {
             if let Some(layer) = layers.get(i) {
                 if layer.is_good() {
-                    return *layer;
+                    // TODO: Fix ugly clone
+                    return layer.clone();
                 }
             }
         }
         Layer::default()
     }
 
-    fn action(action: &Action, current_layers: &mut Vec<u8>, ext_actions: &mut Vec<ExtAction>) {
-        match *action {
-            Action::Layer(l, true) => {
-                if current_layers.contains(&l) {
+    fn actions(actions: &[Action], current_layers: &mut Vec<u8>, ext_actions: &mut Vec<ExtAction>) {
+        for action in actions {
+            match *action {
+                Action::Layer(l, true) => {
+                    if current_layers.contains(&l) {
+                        current_layers.retain(|x| *x != l);
+                    }
+                    current_layers.push(l);
+                }
+                Action::Layer(l, false) => {
                     current_layers.retain(|x| *x != l);
                 }
-                current_layers.push(l);
+                Action::Ext(action) => ext_actions.push(action),
             }
-            Action::Layer(l, false) => {
-                current_layers.retain(|x| *x != l);
-            }
-            Action::Ext(action) => ext_actions.push(action),
         }
     }
 }
@@ -377,12 +377,17 @@ mod test {
     fn test_simple() {
         let mapping = {
             let mut mapping = Buttons::new();
-            mapping.get(JoyKey::S, 0).on_click =
-                Some(Action::Ext(ExtAction::KeyPress(Key::Alt, ClickType::Press)));
-            mapping.get(JoyKey::S, 0).on_double_click = Some(Action::Ext(ExtAction::KeyPress(
-                Key::Space,
-                ClickType::Press,
-            )));
+            mapping
+                .get(JoyKey::S, 0)
+                .on_click
+                .push(Action::Ext(ExtAction::KeyPress(Key::Alt, ClickType::Press)));
+            mapping
+                .get(JoyKey::S, 0)
+                .on_double_click
+                .push(Action::Ext(ExtAction::KeyPress(
+                    Key::Space,
+                    ClickType::Press,
+                )));
             mapping
         };
 
