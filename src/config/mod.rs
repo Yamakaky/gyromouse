@@ -101,11 +101,11 @@ fn map_key(layer: &mut Layer, actions: &[JSMAction]) {
                 }
             }
             Release => {
-                assert_eq!(
-                    action.action_mod, None,
-                    "action modifier non supported on release event type"
-                );
-                layer.on_up = convert_action_mod(action, ClickType::Release);
+                if action.action_mod.is_none() {
+                    eprintln!("action modifier required on release event type");
+                } else {
+                    layer.on_up = convert_action_mod(action, ClickType::Click);
+                }
             }
             Turbo => {
                 // TODO: Implement turbo keys
