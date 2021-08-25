@@ -79,7 +79,7 @@ fn do_main() -> anyhow::Result<()> {
                 content_file.read_to_string(&mut buf)?;
                 buf
             };
-            let errors = config::parse::parse_file(&content, &mut settings, &mut bindings);
+            let errors = config::parse_file(&content, &mut settings, &mut bindings);
             print_errors(errors, &content);
             Ok(())
         }
@@ -119,7 +119,7 @@ fn run(
         content_file.read_to_string(&mut buf)?;
         buf
     };
-    let errors = config::parse::parse_file(&content, &mut settings, &mut bindings);
+    let errors = config::parse_file(&content, &mut settings, &mut bindings);
     print_errors(errors, &content);
     backend.run(r, settings, bindings)
 }

@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use super::{settings::Settings, types::*};
+use super::types::*;
 use cgmath::Deg;
 use hid_gamepad_types::JoyKey;
 use nom::{
@@ -24,120 +24,46 @@ use nom_supreme::{
     },
 };
 
-use crate::{
-    mapping::{Action, Buttons, Layer, MapKey, VirtualKey},
-    ClickType,
-};
+use crate::mapping::{MapKey, VirtualKey};
 
-type Input<'a> = &'a str;
-type Error<'a> = ErrorTree<Input<'a>>;
-type IRes<'a, O> = IResult<Input<'a>, O, Error<'a>>;
+pub type Input<'a> = &'a str;
+pub type Error<'a> = ErrorTree<Input<'a>>;
+pub type IRes<'a, O> = IResult<Input<'a>, O, Error<'a>>;
 
-fn convert_action_mod(action: &JSMAction, default: ClickType) -> Option<Action> {
-    if let ActionType::Special(s) = action.action {
-        if s == SpecialKey::None {
-            return None;
+pub fn jsm_parse(input: Input) -> (Vec<Cmd>, Vec<nom::Err<Error>>) {
+    let mut errors = Vec::new();
+
+    let line = |input| -> IRes<'_, Option<Cmd>> {
+        match alt((empty_line, line))(input) {
+            Ok(ok) => Ok(ok),
+            Err(e) => {
+                errors.push(e);
+                let res: IRes<'_, &str> = not_line_ending(input);
+                let (rest, _) = res.expect("not_line ending cannot fail");
+                Ok((rest, None))
+            }
         }
-    }
-    let action_type = match action.action_mod {
-        None => default,
-        Some(ActionModifier::Toggle) => ClickType::Toggle,
-        Some(ActionModifier::Instant) => ClickType::Click,
     };
-    Some(Action::Ext((action.action, action_type).into()))
+
+    let cmds = collect_separated_terminated(line, line_ending, eof)
+        .parse(input)
+        .map(|(_, cmds): (_, Vec<_>)| cmds.into_iter().flatten().collect())
+        .expect("parser cannot fail");
+    (cmds, errors)
 }
 
-fn map_key(layer: &mut Layer, actions: &[JSMAction]) {
-    use EventModifier::*;
-
-    let mut first = true;
-    for action in actions {
-        match action.event_mod.unwrap_or_else(|| {
-            if first {
-                if actions.len() == 1 {
-                    Start
-                } else {
-                    Tap
-                }
-            } else {
-                Hold
-            }
-        }) {
-            Tap => {
-                layer.on_click = convert_action_mod(action, ClickType::Click);
-            }
-            Hold => {
-                layer.on_hold_down = convert_action_mod(action, ClickType::Press);
-                if action.action_mod.is_none() {
-                    layer.on_hold_up = convert_action_mod(action, ClickType::Release);
-                }
-            }
-            Start => {
-                layer.on_down = convert_action_mod(action, ClickType::Press);
-                if action.action_mod.is_none() {
-                    layer.on_up = convert_action_mod(action, ClickType::Release);
-                }
-            }
-            Release => {
-                assert_eq!(
-                    action.action_mod, None,
-                    "action modifier non supported on release event type"
-                );
-                layer.on_up = convert_action_mod(action, ClickType::Release);
-            }
-            Turbo => {
-                // TODO: Implement turbo keys
-                eprintln!("Warning: Turbo event modifier is unsupported for now.");
-            }
-        }
-        first = false;
-    }
+fn empty_line(input: Input) -> IRes<'_, Option<Cmd>> {
+    let (input, _) = space0(input)?;
+    let (input, _) = opt(comment)(input)?;
+    peek(alt((line_ending, eof)))(input)?;
+    Ok((input, None))
 }
 
-pub fn parse_file<'a>(
-    source: &'a str,
-    settings: &mut Settings,
-    mapping: &mut Buttons,
-) -> Vec<nom::Err<Error<'a>>> {
-    let (cmds, errors) = jsm_parse(source);
-    for cmd in cmds {
-        match cmd {
-            Cmd::Map(Key::Simple(key), ref actions) => map_key(mapping.get(key, 0), actions),
-
-            Cmd::Map(Key::Chorded(k1, k2), ref actions) if k1 == k2 => {
-                assert_eq!(
-                    actions.len(),
-                    1,
-                    "only one action is supported on double click"
-                );
-                let action = actions[0];
-                assert_eq!(
-                    action.event_mod, None,
-                    "event modificators not supported on double click"
-                );
-                mapping.get(k1, 0).on_double_click = convert_action_mod(&action, ClickType::Click);
-            }
-            Cmd::Map(Key::Chorded(k1, k2), ref actions) => {
-                mapping.get(k1, 0).on_down = Some(Action::Layer(k1.to_layer(), true));
-                mapping.get(k1, 0).on_up = Some(Action::Layer(k1.to_layer(), false));
-                map_key(mapping.get(k2, k1.to_layer()), actions);
-            }
-            Cmd::Map(Key::Simul(_k1, _k2), ref _actions) => {
-                // TODO: Support simultaneous key presses
-                eprintln!("Warning: simultaneous keys are unsupported for now");
-            }
-            Cmd::Setting(setting) => settings.apply(setting),
-            Cmd::Reset => {
-                settings.reset();
-                mapping.reset()
-            }
-            Cmd::Special(s) => {
-                // TODO: Support special key presses
-                eprintln!("Warning: special key {:?} is unsupported for now", s);
-            }
-        }
-    }
-    errors
+fn line(input: Input) -> IRes<'_, Option<Cmd>> {
+    let (input, _) = space0(input)?;
+    let (input, cmd) = cmd.context("command").parse(input)?;
+    let (input, _) = empty_line.cut().parse(input)?;
+    Ok((input, Some(cmd)))
 }
 
 fn keys(input: Input) -> IRes<'_, Key> {
@@ -434,43 +360,6 @@ fn comment(input: Input) -> IRes<'_, ()> {
     let (input, _) = not_line_ending(input)?;
     Ok((input, ()))
 }
-
-fn empty_line(input: Input) -> IRes<'_, Option<Cmd>> {
-    let (input, _) = space0(input)?;
-    let (input, _) = opt(comment)(input)?;
-    peek(alt((line_ending, eof)))(input)?;
-    Ok((input, None))
-}
-
-fn line(input: Input) -> IRes<'_, Option<Cmd>> {
-    let (input, _) = space0(input)?;
-    let (input, cmd) = cmd.context("command").parse(input)?;
-    let (input, _) = empty_line.cut().parse(input)?;
-    Ok((input, Some(cmd)))
-}
-
-pub fn jsm_parse(input: Input) -> (Vec<Cmd>, Vec<nom::Err<Error>>) {
-    let mut errors = Vec::new();
-
-    let line = |input| -> IRes<'_, Option<Cmd>> {
-        match alt((empty_line, line))(input) {
-            Ok(ok) => Ok(ok),
-            Err(e) => {
-                errors.push(e);
-                let res: IRes<'_, &str> = not_line_ending(input);
-                let (rest, _) = res.expect("not_line ending cannot fail");
-                Ok((rest, None))
-            }
-        }
-    };
-
-    let cmds = collect_separated_terminated(line, line_ending, eof)
-        .parse(input)
-        .map(|(_, cmds): (_, Vec<_>)| cmds.into_iter().flatten().collect())
-        .expect("parser cannot fail");
-    (cmds, errors)
-}
-
 fn mapkey(input: Input) -> IRes<'_, MapKey> {
     alt((map(virtkey, MapKey::from), map(joykey, MapKey::from)))(input)
 }
