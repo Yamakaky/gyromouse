@@ -67,7 +67,11 @@ impl Settings {
 
     fn new_stick(&self, mode: StickMode, left: bool) -> Box<dyn Stick> {
         match mode {
-            StickMode::Aim => Box::new(CameraStick::default()),
+            StickMode::Aim => Box::new(if left {
+                CameraStick::left()
+            } else {
+                CameraStick::right()
+            }),
             StickMode::Flick | StickMode::FlickOnly | StickMode::RotateOnly => {
                 let flick = mode != StickMode::RotateOnly;
                 let rotate = mode != StickMode::FlickOnly;
@@ -125,8 +129,8 @@ impl StickSettings {
 pub struct AimStickSettings {
     pub sens_dps: f64,
     pub power: f64,
-    pub invert_x: bool,
-    pub invert_y: bool,
+    pub left_axis: Vector2<InvertMode>,
+    pub right_axis: Vector2<InvertMode>,
     pub acceleration_rate: f64,
     pub acceleration_cap: f64,
 }
@@ -136,8 +140,8 @@ impl Default for AimStickSettings {
         Self {
             sens_dps: 360.,
             power: 1.,
-            invert_x: false,
-            invert_y: false,
+            left_axis: vec2(InvertMode::Normal, InvertMode::Normal),
+            right_axis: vec2(InvertMode::Normal, InvertMode::Normal),
             acceleration_rate: 0.,
             acceleration_cap: 1000000.,
         }
@@ -149,8 +153,8 @@ impl AimStickSettings {
         match setting {
             AimStickSetting::Sens(s) => self.sens_dps = s,
             AimStickSetting::Power(s) => self.power = s,
-            AimStickSetting::InvertX(v) => self.invert_x = v == InvertMode::Inverted,
-            AimStickSetting::InvertY(v) => self.invert_y = v == InvertMode::Inverted,
+            AimStickSetting::LeftAxis(v1, v2) => self.left_axis = vec2(v1, v2.unwrap_or(v1)),
+            AimStickSetting::RightAxis(v1, v2) => self.right_axis = vec2(v1, v2.unwrap_or(v1)),
             AimStickSetting::AccelerationRate(s) => self.acceleration_rate = s,
             AimStickSetting::AccelerationCap(s) => self.acceleration_cap = s,
         }

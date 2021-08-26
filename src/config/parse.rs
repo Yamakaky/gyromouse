@@ -191,11 +191,11 @@ fn stick_setting(input: Input) -> IRes<'_, StickSetting> {
         f64_setting("STICK_POWER", |v| {
             StickSetting::Aim(AimStickSetting::Power(v))
         }),
-        setting_invert("STICK_AXIS_X", |m| {
-            StickSetting::Aim(AimStickSetting::InvertX(m))
+        setting_invert("LEFT_STICK_AXIS", |x, y| {
+            StickSetting::Aim(AimStickSetting::LeftAxis(x, y))
         }),
-        setting_invert("STICK_AXIS_Y", |m| {
-            StickSetting::Aim(AimStickSetting::InvertY(m))
+        setting_invert("RIGHT_STICK_AXIS", |x, y| {
+            StickSetting::Aim(AimStickSetting::RightAxis(x, y))
         }),
         f64_setting("STICK_ACCELERATION_RATE", |v| {
             StickSetting::Aim(AimStickSetting::AccelerationRate(v))
@@ -229,18 +229,24 @@ fn stick_setting(input: Input) -> IRes<'_, StickSetting> {
 
 fn setting_invert<O>(
     tag: &'static str,
-    value_map: impl Fn(InvertMode) -> O,
+    value_map: impl Fn(InvertMode, Option<InvertMode>) -> O,
 ) -> impl FnMut(Input) -> IRes<'_, O> {
     move |input| {
         let (input, _) = tag_no_case(tag)(input)?;
         let (input, _) = equal_with_space.cut().parse(input)?;
-        let (input, val) = alt((
+        let (input, v1) = alt((
             value(InvertMode::Normal, tag_no_case("STANDARD")),
-            value(InvertMode::Inverted, tag_no_case("INVERT")),
+            value(InvertMode::Inverted, tag_no_case("INVERTED")),
         ))
         .cut()
         .parse(input)?;
-        Ok((input, value_map(val)))
+        let (input, v2) = opt(space1.precedes(alt((
+            value(InvertMode::Normal, tag_no_case("STANDARD")),
+            value(InvertMode::Inverted, tag_no_case("INVERTED")),
+        ))))
+        .cut()
+        .parse(input)?;
+        Ok((input, value_map(v1, v2)))
     }
 }
 
@@ -281,8 +287,8 @@ fn gyro_setting(input: Input) -> IRes<'_, Setting> {
             f64_setting("GYRO_SMOOTH_TIME", |secs| {
                 GyroSetting::SmoothTime(Duration::from_secs_f64(secs))
             }),
-            setting_invert("GYRO_AXIS_X", GyroSetting::InvertX),
-            setting_invert("GYRO_AXIS_Y", GyroSetting::InvertY),
+            setting_invert("GYRO_AXIS_X", |v1, _v2| GyroSetting::InvertX(v1)),
+            setting_invert("GYRO_AXIS_Y", |v1, _v2| GyroSetting::InvertY(v1)),
         )),
         Setting::Gyro,
     )(input)

@@ -1,6 +1,9 @@
 use std::time::Duration;
 
-use cgmath::Deg;
+use cgmath::{
+    num_traits::{NumCast, ToPrimitive},
+    Deg,
+};
 
 use crate::{
     mapping::{ExtAction, MapKey},
@@ -110,8 +113,8 @@ pub enum StickSetting {
 pub enum AimStickSetting {
     Sens(f64),
     Power(f64),
-    InvertX(InvertMode),
-    InvertY(InvertMode),
+    LeftAxis(InvertMode, Option<InvertMode>),
+    RightAxis(InvertMode, Option<InvertMode>),
     AccelerationRate(f64),
     AccelerationCap(f64),
 }
@@ -199,4 +202,23 @@ pub enum RingMode {
 pub enum InvertMode {
     Normal,
     Inverted,
+}
+
+impl ToPrimitive for InvertMode {
+    fn to_i64(&self) -> std::option::Option<i64> {
+        Some(match self {
+            InvertMode::Normal => 1,
+            InvertMode::Inverted => -1,
+        })
+    }
+
+    fn to_u64(&self) -> Option<u64> {
+        None
+    }
+}
+
+impl NumCast for InvertMode {
+    fn from<T: ToPrimitive>(_: T) -> Option<Self> {
+        None
+    }
 }

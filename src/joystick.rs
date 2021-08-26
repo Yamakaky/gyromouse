@@ -24,12 +24,23 @@ pub trait Stick {
 }
 
 pub struct CameraStick {
+    left: bool,
     current_speed: f64,
 }
 
-impl Default for CameraStick {
-    fn default() -> Self {
-        CameraStick { current_speed: 0. }
+impl CameraStick {
+    pub fn left() -> Self {
+        CameraStick {
+            left: true,
+            current_speed: 0.,
+        }
+    }
+
+    pub fn right() -> Self {
+        CameraStick {
+            left: false,
+            current_speed: 0.,
+        }
     }
 }
 
@@ -56,9 +67,18 @@ impl Stick for CameraStick {
         let amp_clamped = amp_zones.max(0.).min(1.);
         let amp_exp = amp_clamped.powf(s.aim.power);
         if stick.magnitude2() > 0. {
-            let offset = stick.normalize_to(amp_exp)
+            let mut offset = stick.normalize_to(amp_exp)
                 * s.aim.sens_dps
                 * ((1. + self.current_speed) * dt.as_secs_f64());
+            offset.mul_assign_element_wise(
+                if self.left {
+                    s.aim.left_axis
+                } else {
+                    s.aim.right_axis
+                }
+                .cast::<f64>()
+                .unwrap(),
+            );
             mouse.mouse_move_relative(&settings.mouse, MouseMovement::from_vec_deg(offset));
         }
     }
