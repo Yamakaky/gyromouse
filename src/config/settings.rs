@@ -80,7 +80,7 @@ impl Settings {
             } else {
                 ButtonStick::right(self.right_ring_mode)
             }),
-            StickMode::ScrollWheel => todo!("Scoll wheel stick is unimplemented for now"),
+            StickMode::ScrollWheel => Box::new(ScrollStick::new()),
         }
     }
 }

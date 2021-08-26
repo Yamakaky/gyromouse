@@ -347,3 +347,44 @@ impl Stick for AreaStick {
         self.last_offset = offset;
     }
 }
+
+pub enum ScrollStick {
+    Center,
+    Scrolling { last: Deg<f64>, acc: f64 },
+}
+
+impl ScrollStick {
+    pub fn new() -> Self {
+        Self::Center
+    }
+}
+
+impl Stick for ScrollStick {
+    fn handle(
+        &mut self,
+        stick: Vector2<f64>,
+        settings: &Settings,
+        _bindings: &mut Buttons,
+        mouse: &mut Mouse,
+        _now: Instant,
+        _dt: Duration,
+    ) {
+        let angle = vec2(0., 1.).angle(stick).into();
+        match self {
+            _ if stick.magnitude() < settings.stick.deadzone => *self = Self::Center,
+            ScrollStick::Center => {
+                *self = ScrollStick::Scrolling {
+                    last: angle,
+                    acc: 0.,
+                }
+            }
+            ScrollStick::Scrolling { last, acc } => {
+                let delta = (angle - *last).normalize_signed() / settings.stick.scroll.sens + *acc;
+                let delta_rounded = delta.round();
+                *acc = delta - delta_rounded;
+                mouse.enigo().mouse_scroll_y(delta_rounded as i32);
+                *last = angle;
+            }
+        }
+    }
+}
