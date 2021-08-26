@@ -614,8 +614,9 @@ dependencies = [
 
 [[package]]
 name = "nom-supreme"
-version = "0.5.0"
-source = "git+https://github.com/Yamakaky/nom-supreme?branch=nom7#1af40a55e1f3e7194cfa88296475e84e980f6193"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "aadc66631948f6b65da03be4c4cd8bd104d481697ecbb9bbd65719b1ec60bc9f"
 dependencies = [
  "brownstone",
  "indent_write",

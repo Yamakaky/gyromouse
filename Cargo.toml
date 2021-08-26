@@ -27,7 +27,7 @@ hid-gamepad-types = { git = "https://github.com/Yamakaky/joy" }
 hid-gamepad = { git = "https://github.com/Yamakaky/joy", optional = true }
 joycon = { git = "https://github.com/Yamakaky/joy", optional = true }
 nom = "7.0.0"
-nom-supreme = { git = "https://github.com/Yamakaky/nom-supreme", branch = "nom7" }
+nom-supreme = "0.6.0"
 human-panic = "1.0.3"
 virtual-gamepad = { git = "https://github.com/Yamakaky/virtual-gamepad", optional = true }
 
