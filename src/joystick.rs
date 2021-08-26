@@ -3,6 +3,7 @@
 use std::time::{Duration, Instant};
 
 use cgmath::{vec2, AbsDiffEq, Angle, Deg, ElementWise, InnerSpace, Rad, Vector2, Zero};
+use enigo::MouseControllable;
 
 use crate::{
     config::{settings::Settings, types::RingMode},
@@ -43,21 +44,20 @@ impl Stick for CameraStick {
         dt: Duration,
     ) {
         // TODO: check settings semantic
-        let s = &settings.stick_settings;
+        let s = &settings.stick;
         let amp = stick.magnitude();
         let amp_zones = (amp - s.deadzone) / (s.fullzone - s.deadzone);
         if amp_zones >= 1. {
-            self.current_speed = (self.current_speed
-                + s.aim_stick.acceleration_rate * dt.as_secs_f64())
-            .min(s.aim_stick.acceleration_cap);
+            self.current_speed = (self.current_speed + s.aim.acceleration_rate * dt.as_secs_f64())
+                .min(s.aim.acceleration_cap);
         } else {
             self.current_speed = 0.;
         }
         let amp_clamped = amp_zones.max(0.).min(1.);
-        let amp_exp = amp_clamped.powf(s.aim_stick.power);
+        let amp_exp = amp_clamped.powf(s.aim.power);
         if stick.magnitude2() > 0. {
             let offset = stick.normalize_to(amp_exp)
-                * s.aim_stick.sens_dps
+                * s.aim.sens_dps
                 * ((1. + self.current_speed) * dt.as_secs_f64());
             mouse.mouse_move_relative(&settings.mouse, MouseMovement::from_vec_deg(offset));
         }
@@ -114,7 +114,7 @@ impl Stick for FlickStick {
         now: Instant,
         _dt: Duration,
     ) {
-        let s = &settings.stick_settings;
+        let s = &settings.stick;
         let offset = match self.state {
             FlickStickState::Center | FlickStickState::Rotating { .. }
                 if stick.magnitude() < s.fullzone =>
@@ -143,7 +143,7 @@ impl Stick for FlickStick {
                 target,
             } => {
                 let elapsed = now.duration_since(flick_start).as_secs_f64();
-                let max = s.flick_stick.flick_time.as_secs_f64() * target.0.abs() / 180.;
+                let max = s.flick.flick_time.as_secs_f64() * target.0.abs() / 180.;
                 let dt_factor = elapsed / max;
                 let current_angle = target * dt_factor.min(1.);
                 let delta = current_angle - *last;
@@ -209,7 +209,7 @@ impl Stick for ButtonStick {
         _now: Instant,
         _dt: Duration,
     ) {
-        let settings = &settings.stick_settings;
+        let settings = &settings.stick;
         let amp = stick.magnitude();
         let amp_zones = (amp - settings.deadzone) / (settings.fullzone - settings.deadzone);
         let amp_clamped = amp_zones.max(0.).min(1.);
@@ -323,9 +323,9 @@ impl Stick for AreaStick {
         _now: Instant,
         _dt: Duration,
     ) {
-        let radius = settings.stick_settings.area_stick.screen_radius as f64;
+        let radius = settings.stick.area.screen_radius as f64;
         let offset = if self.snap {
-            if stick.magnitude() > settings.stick_settings.deadzone {
+            if stick.magnitude() > settings.stick.deadzone {
                 stick.normalize_to(radius)
             } else {
                 Vector2::zero()
@@ -334,7 +334,7 @@ impl Stick for AreaStick {
             stick * radius
         }
         .mul_element_wise(vec2(1., -1.));
-        let center = settings.stick_settings.area_stick.screen_resolution / 2;
+        let center = settings.stick.area.screen_resolution / 2;
         let location = center.cast::<i32>().unwrap() + offset.cast::<i32>().unwrap();
         if self.snap {
             if location != self.last_location || location != Vector2::zero() {

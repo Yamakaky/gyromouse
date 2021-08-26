@@ -9,7 +9,7 @@ use super::types::*;
 #[derive(Debug, Clone)]
 pub struct Settings {
     pub gyro: GyroSettings,
-    pub stick_settings: StickSettings,
+    pub stick: StickSettings,
     pub left_stick_mode: StickMode,
     pub right_stick_mode: StickMode,
     pub left_ring_mode: RingMode,
@@ -24,7 +24,7 @@ impl Default for Settings {
     fn default() -> Self {
         Self {
             gyro: GyroSettings::default(),
-            stick_settings: StickSettings::default(),
+            stick: StickSettings::default(),
             left_stick_mode: StickMode::NoMouse,
             right_stick_mode: StickMode::Aim,
             left_ring_mode: RingMode::Outer,
@@ -41,7 +41,7 @@ impl Settings {
     pub fn apply(&mut self, setting: Setting) {
         match setting {
             Setting::Gyro(s) => self.gyro.apply(s),
-            Setting::Stick(s) => self.stick_settings.apply(s),
+            Setting::Stick(s) => self.stick.apply(s),
             Setting::LeftStickMode(m) => self.left_stick_mode = m,
             Setting::RightStickMode(m) => self.right_stick_mode = m,
             Setting::LeftRingMode(m) => self.left_ring_mode = m,
@@ -89,10 +89,10 @@ impl Settings {
 pub struct StickSettings {
     pub deadzone: f64,
     pub fullzone: f64,
-    pub aim_stick: AimStickSettings,
-    pub flick_stick: FlickStickSettings,
-    pub scroll_stick: ScrollStickSettings,
-    pub area_stick: AreaStickSettings,
+    pub aim: AimStickSettings,
+    pub flick: FlickStickSettings,
+    pub scroll: ScrollStickSettings,
+    pub area: AreaStickSettings,
 }
 
 impl Default for StickSettings {
@@ -100,10 +100,10 @@ impl Default for StickSettings {
         Self {
             deadzone: 0.15,
             fullzone: 0.9,
-            aim_stick: Default::default(),
-            flick_stick: Default::default(),
-            scroll_stick: Default::default(),
-            area_stick: Default::default(),
+            aim: Default::default(),
+            flick: Default::default(),
+            scroll: Default::default(),
+            area: Default::default(),
         }
     }
 }
@@ -113,10 +113,10 @@ impl StickSettings {
         match setting {
             StickSetting::Deadzone(d) => self.deadzone = d,
             StickSetting::FullZone(d) => self.fullzone = d,
-            StickSetting::Aim(s) => self.aim_stick.apply(s),
-            StickSetting::Flick(s) => self.flick_stick.apply(s),
-            StickSetting::Scroll(s) => self.scroll_stick.apply(s),
-            StickSetting::Area(s) => self.area_stick.apply(s),
+            StickSetting::Aim(s) => self.aim.apply(s),
+            StickSetting::Flick(s) => self.flick.apply(s),
+            StickSetting::Scroll(s) => self.scroll.apply(s),
+            StickSetting::Area(s) => self.area.apply(s),
         }
     }
 }
