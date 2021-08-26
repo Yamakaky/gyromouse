@@ -18,7 +18,7 @@ pub fn parse_file<'a>(
     for cmd in cmds {
         match cmd {
             Cmd::Map(Key::Simple(key), ref actions) => map_key(mapping.get(key, 0), actions),
-
+            // Double click
             Cmd::Map(Key::Chorded(k1, k2), ref actions) if k1 == k2 => {
                 // TODO: Correctly handle modifiers for double click
                 for action in actions {

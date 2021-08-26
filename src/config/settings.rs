@@ -2,7 +2,7 @@ use std::time::Duration;
 
 use cgmath::{vec2, Deg, Vector2, Zero};
 
-use crate::joystick::{ButtonStick, CameraStick, FlickStick, Stick};
+use crate::joystick::*;
 
 use super::types::*;
 
@@ -73,8 +73,8 @@ impl Settings {
                 let rotate = mode != StickMode::FlickOnly;
                 Box::new(FlickStick::new(flick, rotate))
             }
-            StickMode::MouseRing => todo!("Mouse ring stick is unimplemented for now"),
-            StickMode::MouseArea => todo!("Mouse area stick is unimplemented for now"),
+            StickMode::MouseRing => Box::new(AreaStick::ring()),
+            StickMode::MouseArea => Box::new(AreaStick::area()),
             StickMode::NoMouse => Box::new(if left {
                 ButtonStick::left(self.left_ring_mode)
             } else {
@@ -92,6 +92,7 @@ pub struct StickSettings {
     pub aim_stick: AimStickSettings,
     pub flick_stick: FlickStickSettings,
     pub scroll_stick: ScrollStickSettings,
+    pub area_stick: AreaStickSettings,
 }
 
 impl Default for StickSettings {
@@ -102,6 +103,7 @@ impl Default for StickSettings {
             aim_stick: Default::default(),
             flick_stick: Default::default(),
             scroll_stick: Default::default(),
+            area_stick: Default::default(),
         }
     }
 }
@@ -114,6 +116,7 @@ impl StickSettings {
             StickSetting::Aim(s) => self.aim_stick.apply(s),
             StickSetting::Flick(s) => self.flick_stick.apply(s),
             StickSetting::Scroll(s) => self.scroll_stick.apply(s),
+            StickSetting::Area(s) => self.area_stick.apply(s),
         }
     }
 }
@@ -196,6 +199,31 @@ impl ScrollStickSettings {
     fn apply(&mut self, setting: ScrollStickSetting) {
         match setting {
             ScrollStickSetting::Sens(s) => self.sens = s,
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct AreaStickSettings {
+    pub screen_resolution: Vector2<u32>,
+    pub screen_radius: u32,
+}
+
+impl Default for AreaStickSettings {
+    fn default() -> Self {
+        Self {
+            screen_resolution: vec2(1920, 1080),
+            screen_radius: 50,
+        }
+    }
+}
+
+impl AreaStickSettings {
+    fn apply(&mut self, setting: AreaStickSetting) {
+        match setting {
+            AreaStickSetting::ScreenResolutionX(r) => self.screen_resolution.x = r,
+            AreaStickSetting::ScreenResolutionY(r) => self.screen_resolution.y = r,
+            AreaStickSetting::Radius(r) => self.screen_radius = r,
         }
     }
 }

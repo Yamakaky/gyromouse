@@ -144,6 +144,20 @@ fn setting(input: Input) -> IRes<'_, Setting> {
     ))(input)
 }
 
+fn u32_setting<Output>(
+    tag: &'static str,
+    value_map: impl Fn(u32) -> Output,
+) -> impl FnMut(Input) -> IRes<'_, Output> {
+    move |input| {
+        let (input, _) = tag_no_case(tag)(input)?;
+        let (input, val) = nom::character::complete::u32
+            .preceded_by(equal_with_space)
+            .cut()
+            .parse(input)?;
+        Ok((input, value_map(val)))
+    }
+}
+
 fn f64_setting<Output>(
     tag: &'static str,
     value_map: impl Fn(f64) -> Output,
@@ -200,6 +214,15 @@ fn stick_setting(input: Input) -> IRes<'_, StickSetting> {
         }),
         f64_setting("SCROLL_SENS", |v| {
             StickSetting::Scroll(ScrollStickSetting::Sens(Deg(v)))
+        }),
+        u32_setting("SCREEN_RESOLUTION_X", |v| {
+            StickSetting::Area(AreaStickSetting::ScreenResolutionX(v))
+        }),
+        u32_setting("SCREEN_RESOLUTION_Y", |v| {
+            StickSetting::Area(AreaStickSetting::ScreenResolutionY(v))
+        }),
+        u32_setting("MOUSE_RING_RADIUS", |v| {
+            StickSetting::Area(AreaStickSetting::Radius(v))
         }),
     ))(input)
 }

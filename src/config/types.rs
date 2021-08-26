@@ -103,6 +103,7 @@ pub enum StickSetting {
     Aim(AimStickSetting),
     Flick(FlickStickSetting),
     Scroll(ScrollStickSetting),
+    Area(AreaStickSetting),
 }
 
 #[derive(Debug, Copy, Clone)]
@@ -125,6 +126,13 @@ pub enum FlickStickSetting {
 #[derive(Debug, Copy, Clone)]
 pub enum ScrollStickSetting {
     Sens(Deg<f64>),
+}
+
+#[derive(Debug, Copy, Clone)]
+pub enum AreaStickSetting {
+    ScreenResolutionX(u32),
+    ScreenResolutionY(u32),
+    Radius(u32),
 }
 
 #[derive(Debug, Copy, Clone)]

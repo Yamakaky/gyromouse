@@ -2,7 +2,7 @@
 
 use std::time::{Duration, Instant};
 
-use cgmath::{AbsDiffEq, Angle, Deg, InnerSpace, Rad, Vector2};
+use cgmath::{vec2, AbsDiffEq, Angle, Deg, ElementWise, InnerSpace, Rad, Vector2, Zero};
 
 use crate::{
     config::{settings::Settings, types::RingMode},
@@ -286,5 +286,64 @@ impl Stick for ButtonStick {
             bindings.key_up(VirtualKey::RUp, now);
             bindings.key_up(VirtualKey::RDown, now);
         }
+    }
+}
+
+pub struct AreaStick {
+    snap: bool,
+    last_location: Vector2<i32>,
+    last_offset: Vector2<f64>,
+}
+
+impl AreaStick {
+    pub fn area() -> Self {
+        Self {
+            snap: false,
+            last_location: Vector2::zero(),
+            last_offset: Vector2::zero(),
+        }
+    }
+
+    pub fn ring() -> Self {
+        Self {
+            snap: true,
+            last_location: Vector2::zero(),
+            last_offset: Vector2::zero(),
+        }
+    }
+}
+
+impl Stick for AreaStick {
+    fn handle(
+        &mut self,
+        stick: Vector2<f64>,
+        settings: &Settings,
+        _bindings: &mut Buttons,
+        mouse: &mut Mouse,
+        _now: Instant,
+        _dt: Duration,
+    ) {
+        let radius = settings.stick_settings.area_stick.screen_radius as f64;
+        let offset = if self.snap {
+            if stick.magnitude() > settings.stick_settings.deadzone {
+                stick.normalize_to(radius)
+            } else {
+                Vector2::zero()
+            }
+        } else {
+            stick * radius
+        }
+        .mul_element_wise(vec2(1., -1.));
+        let center = settings.stick_settings.area_stick.screen_resolution / 2;
+        let location = center.cast::<i32>().unwrap() + offset.cast::<i32>().unwrap();
+        if self.snap {
+            if location != self.last_location || location != Vector2::zero() {
+                mouse.mouse_move_absolute_pixel(location);
+            }
+        } else {
+            mouse.mouse_move_relative_pixel(offset.sub_element_wise(self.last_offset));
+        }
+        self.last_location = location;
+        self.last_offset = offset;
     }
 }

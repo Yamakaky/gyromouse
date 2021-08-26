@@ -64,17 +64,24 @@ impl Mouse {
     // mouse movement is pixel perfect, so we keep track of the error.
     pub fn mouse_move_relative(&mut self, settings: &MouseSettings, offset: MouseMovement) {
         let offset_pixel =
-            vec2(offset.x.0, offset.y.0) * settings.real_world_calibration * settings.in_game_sens;
-        let sum = offset_pixel + self.error_accumulator;
+            vec2(offset.x.0, -offset.y.0) * settings.real_world_calibration * settings.in_game_sens;
+        self.mouse_move_relative_pixel(offset_pixel);
+    }
+
+    pub fn mouse_move_relative_pixel(&mut self, offset: Vector2<f64>) {
+        let sum = offset + self.error_accumulator;
         let rounded = vec2(sum.x.round(), sum.y.round());
         self.error_accumulator = sum - rounded;
         if let Some(rounded) = rounded.cast::<i32>() {
             if rounded != Vector2::zero() {
                 // In enigo, +y is toward the bottom
-                self.enigo
-                    .mouse_move_relative(rounded.x as i32, -rounded.y as i32);
+                self.enigo.mouse_move_relative(rounded.x, rounded.y);
             }
         }
+    }
+
+    pub fn mouse_move_absolute_pixel(&mut self, offset: Vector2<i32>) {
+        self.enigo.mouse_move_to(offset.x, offset.y);
     }
 
     pub fn enigo(&mut self) -> &mut Enigo {
