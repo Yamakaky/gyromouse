@@ -452,6 +452,11 @@ fn virtkey(input: Input) -> IRes<'_, VirtualKey> {
         value(VirtualKey::RLeft, tag_no_case("RLeft")),
         value(VirtualKey::RRight, tag_no_case("RRight")),
         value(VirtualKey::RRing, tag_no_case("RRing")),
+        value(VirtualKey::MUp, tag_no_case("MUp")),
+        value(VirtualKey::MDown, tag_no_case("MDown")),
+        value(VirtualKey::MLeft, tag_no_case("MLeft")),
+        value(VirtualKey::MRight, tag_no_case("MRight")),
+        value(VirtualKey::MRing, tag_no_case("MRing")),
     ))(input)
 }
 
