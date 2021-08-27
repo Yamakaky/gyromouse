@@ -1,7 +1,7 @@
 use enigo::{Key, MouseButton};
 use enum_map::{Enum, EnumMap};
 use hid_gamepad_types::JoyKey;
-use std::{collections::HashMap, fmt::Debug, time::Duration};
+use std::{collections::HashMap, fmt::Debug, mem::MaybeUninit, time::Duration};
 use std::{convert::TryInto, time::Instant};
 
 use crate::ClickType;
@@ -107,6 +107,11 @@ pub enum VirtualKey {
     RLeft,
     RRight,
     RRing,
+    MUp,
+    MDown,
+    MLeft,
+    MRight,
+    MRing,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -127,7 +132,7 @@ const JOYKEY_SIZE: usize = <JoyKey as Enum<()>>::POSSIBLE_VALUES;
 const VIRTKEY_SIZE: usize = <VirtualKey as Enum<()>>::POSSIBLE_VALUES;
 const MAP_KEY_SIZE: usize = JOYKEY_SIZE + VIRTKEY_SIZE;
 
-impl<V: Default> Enum<V> for MapKey {
+impl<V: Default + Sized> Enum<V> for MapKey {
     type Array = [V; MAP_KEY_SIZE];
 
     const POSSIBLE_VALUES: usize = MAP_KEY_SIZE;
@@ -158,11 +163,13 @@ impl<V: Default> Enum<V> for MapKey {
     }
 
     fn from_function<F: FnMut(Self) -> V>(mut f: F) -> Self::Array {
-        let mut out = Self::Array::default();
-        for (i, out) in out.iter_mut().enumerate() {
-            *out = f(<Self as Enum<V>>::from_usize(i));
+        unsafe {
+            let mut out = MaybeUninit::<[MaybeUninit<V>; MAP_KEY_SIZE]>::uninit().assume_init();
+            for (i, out) in out.iter_mut().enumerate() {
+                *out = MaybeUninit::new(f(<Self as Enum<V>>::from_usize(i)));
+            }
+            out.as_ptr().cast::<Self::Array>().read()
         }
-        out
     }
 }
 

@@ -58,20 +58,16 @@ impl Settings {
     }
 
     pub fn new_left_stick(&self) -> Box<dyn Stick> {
-        self.new_stick(self.left_stick_mode, true)
+        self.new_stick(self.left_stick_mode)
     }
 
     pub fn new_right_stick(&self) -> Box<dyn Stick> {
-        self.new_stick(self.right_stick_mode, false)
+        self.new_stick(self.right_stick_mode)
     }
 
-    fn new_stick(&self, mode: StickMode, left: bool) -> Box<dyn Stick> {
+    fn new_stick(&self, mode: StickMode) -> Box<dyn Stick> {
         match mode {
-            StickMode::Aim => Box::new(if left {
-                CameraStick::left()
-            } else {
-                CameraStick::right()
-            }),
+            StickMode::Aim => Box::new(CameraStick::new()),
             StickMode::Flick | StickMode::FlickOnly | StickMode::RotateOnly => {
                 let flick = mode != StickMode::RotateOnly;
                 let rotate = mode != StickMode::FlickOnly;
@@ -79,11 +75,7 @@ impl Settings {
             }
             StickMode::MouseRing => Box::new(AreaStick::ring()),
             StickMode::MouseArea => Box::new(AreaStick::area()),
-            StickMode::NoMouse => Box::new(if left {
-                ButtonStick::left(self.left_ring_mode)
-            } else {
-                ButtonStick::right(self.right_ring_mode)
-            }),
+            StickMode::NoMouse => Box::new(ButtonStick::new(self.left_ring_mode)),
             StickMode::ScrollWheel => Box::new(ScrollStick::new()),
         }
     }
@@ -97,6 +89,7 @@ pub struct StickSettings {
     pub flick: FlickStickSettings,
     pub scroll: ScrollStickSettings,
     pub area: AreaStickSettings,
+    pub motion: MotionStickSettings,
 }
 
 impl Default for StickSettings {
@@ -108,6 +101,7 @@ impl Default for StickSettings {
             flick: Default::default(),
             scroll: Default::default(),
             area: Default::default(),
+            motion: Default::default(),
         }
     }
 }
@@ -228,6 +222,19 @@ impl AreaStickSettings {
             AreaStickSetting::ScreenResolutionX(r) => self.screen_resolution.x = r,
             AreaStickSetting::ScreenResolutionY(r) => self.screen_resolution.y = r,
             AreaStickSetting::Radius(r) => self.screen_radius = r,
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct MotionStickSettings {
+    pub axis: Vector2<InvertMode>,
+}
+
+impl Default for MotionStickSettings {
+    fn default() -> Self {
+        Self {
+            axis: vec2(InvertMode::Normal, InvertMode::Normal),
         }
     }
 }

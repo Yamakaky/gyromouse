@@ -15,6 +15,7 @@ pub trait Stick {
     fn handle(
         &mut self,
         stick: Vector2<f64>,
+        side: StickSide,
         settings: &Settings,
         bindings: &mut Buttons,
         mouse: &mut Mouse,
@@ -23,24 +24,62 @@ pub trait Stick {
     );
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum StickSide {
+    Left,
+    Right,
+    Motion,
+}
+
+impl StickSide {
+    fn left(self) -> VirtualKey {
+        match self {
+            StickSide::Left => VirtualKey::LLeft,
+            StickSide::Right => VirtualKey::RLeft,
+            StickSide::Motion => VirtualKey::MLeft,
+        }
+    }
+
+    fn right(self) -> VirtualKey {
+        match self {
+            StickSide::Left => VirtualKey::LRight,
+            StickSide::Right => VirtualKey::RRight,
+            StickSide::Motion => VirtualKey::MRight,
+        }
+    }
+
+    fn up(self) -> VirtualKey {
+        match self {
+            StickSide::Left => VirtualKey::LUp,
+            StickSide::Right => VirtualKey::RUp,
+            StickSide::Motion => VirtualKey::MUp,
+        }
+    }
+
+    fn down(self) -> VirtualKey {
+        match self {
+            StickSide::Left => VirtualKey::LDown,
+            StickSide::Right => VirtualKey::RDown,
+            StickSide::Motion => VirtualKey::MDown,
+        }
+    }
+
+    fn ring(self) -> VirtualKey {
+        match self {
+            StickSide::Left => VirtualKey::LRing,
+            StickSide::Right => VirtualKey::RRing,
+            StickSide::Motion => VirtualKey::MRing,
+        }
+    }
+}
+
 pub struct CameraStick {
-    left: bool,
     current_speed: f64,
 }
 
 impl CameraStick {
-    pub fn left() -> Self {
-        CameraStick {
-            left: true,
-            current_speed: 0.,
-        }
-    }
-
-    pub fn right() -> Self {
-        CameraStick {
-            left: false,
-            current_speed: 0.,
-        }
+    pub fn new() -> Self {
+        CameraStick { current_speed: 0. }
     }
 }
 
@@ -48,6 +87,7 @@ impl Stick for CameraStick {
     fn handle(
         &mut self,
         stick: Vector2<f64>,
+        side: StickSide,
         settings: &Settings,
         _bindings: &mut Buttons,
         mouse: &mut Mouse,
@@ -71,10 +111,10 @@ impl Stick for CameraStick {
                 * s.aim.sens_dps
                 * ((1. + self.current_speed) * dt.as_secs_f64());
             offset.mul_assign_element_wise(
-                if self.left {
-                    s.aim.left_axis
-                } else {
-                    s.aim.right_axis
+                match side {
+                    StickSide::Left => s.aim.left_axis,
+                    StickSide::Right => s.aim.right_axis,
+                    StickSide::Motion => s.motion.axis,
                 }
                 .cast::<f64>()
                 .unwrap(),
@@ -128,6 +168,7 @@ impl Stick for FlickStick {
     fn handle(
         &mut self,
         stick: Vector2<f64>,
+        _side: StickSide,
         settings: &Settings,
         _bindings: &mut Buttons,
         mouse: &mut Mouse,
@@ -196,23 +237,13 @@ impl Stick for FlickStick {
 }
 
 pub struct ButtonStick {
-    left: bool,
     angle: Deg<f64>,
     ring_mode: RingMode,
 }
 
 impl ButtonStick {
-    pub fn left(ring_mode: RingMode) -> Self {
+    pub fn new(ring_mode: RingMode) -> Self {
         Self {
-            left: true,
-            angle: Deg(30.),
-            ring_mode,
-        }
-    }
-
-    pub fn right(ring_mode: RingMode) -> Self {
-        Self {
-            left: false,
             angle: Deg(30.),
             ring_mode,
         }
@@ -223,6 +254,7 @@ impl Stick for ButtonStick {
     fn handle(
         &mut self,
         stick: Vector2<f64>,
+        side: StickSide,
         settings: &Settings,
         bindings: &mut Buttons,
         _mouse: &mut Mouse,
@@ -248,63 +280,22 @@ impl Stick for ButtonStick {
 
         if amp_clamped > 0. {
             bindings.key(
-                if self.left {
-                    VirtualKey::LRing
-                } else {
-                    VirtualKey::RRing
-                },
+                side.ring(),
                 match self.ring_mode {
                     RingMode::Inner => amp_clamped < 1.,
                     RingMode::Outer => amp_clamped >= 1.,
                 },
                 now,
             );
-            bindings.key(
-                if self.left {
-                    VirtualKey::LRight
-                } else {
-                    VirtualKey::RRight
-                },
-                angle_r.abs_diff_eq(&Rad(0.), epsilon),
-                now,
-            );
-            bindings.key(
-                if self.left {
-                    VirtualKey::LLeft
-                } else {
-                    VirtualKey::RLeft
-                },
-                angle_l.abs_diff_eq(&Rad(0.), epsilon),
-                now,
-            );
-            bindings.key(
-                if self.left {
-                    VirtualKey::LUp
-                } else {
-                    VirtualKey::RUp
-                },
-                angle_u.abs_diff_eq(&Rad(0.), epsilon),
-                now,
-            );
-            bindings.key(
-                if self.left {
-                    VirtualKey::LDown
-                } else {
-                    VirtualKey::RDown
-                },
-                angle_d.abs_diff_eq(&Rad(0.), epsilon),
-                now,
-            );
-        } else if self.left {
-            bindings.key_up(VirtualKey::LLeft, now);
-            bindings.key_up(VirtualKey::LRight, now);
-            bindings.key_up(VirtualKey::LUp, now);
-            bindings.key_up(VirtualKey::LDown, now);
+            bindings.key(side.right(), angle_r.abs_diff_eq(&Rad(0.), epsilon), now);
+            bindings.key(side.left(), angle_l.abs_diff_eq(&Rad(0.), epsilon), now);
+            bindings.key(side.up(), angle_u.abs_diff_eq(&Rad(0.), epsilon), now);
+            bindings.key(side.down(), angle_d.abs_diff_eq(&Rad(0.), epsilon), now);
         } else {
-            bindings.key_up(VirtualKey::RLeft, now);
-            bindings.key_up(VirtualKey::RRight, now);
-            bindings.key_up(VirtualKey::RUp, now);
-            bindings.key_up(VirtualKey::RDown, now);
+            bindings.key_up(side.left(), now);
+            bindings.key_up(side.right(), now);
+            bindings.key_up(side.up(), now);
+            bindings.key_up(side.down(), now);
         }
     }
 }
@@ -337,6 +328,7 @@ impl Stick for AreaStick {
     fn handle(
         &mut self,
         stick: Vector2<f64>,
+        _side: StickSide,
         settings: &Settings,
         _bindings: &mut Buttons,
         mouse: &mut Mouse,
@@ -383,6 +375,7 @@ impl Stick for ScrollStick {
     fn handle(
         &mut self,
         stick: Vector2<f64>,
+        _side: StickSide,
         settings: &Settings,
         _bindings: &mut Buttons,
         mouse: &mut Mouse,

@@ -11,7 +11,7 @@ use crate::{
     calibration::Calibration,
     config::{settings::Settings, types::GyroSpace},
     gyromouse::GyroMouse,
-    joystick::Stick,
+    joystick::{Stick, StickSide},
     mapping::{Buttons, ExtAction},
     mouse::{Mouse, MouseMovement},
     space_mapper::{
@@ -66,6 +66,7 @@ impl Engine {
     pub fn handle_left_stick(&mut self, stick: Vector2<f64>, now: Instant, dt: Duration) {
         self.left_stick.handle(
             stick,
+            StickSide::Left,
             &self.settings,
             &mut self.buttons,
             &mut self.mouse,
@@ -77,6 +78,7 @@ impl Engine {
     pub fn handle_right_stick(&mut self, stick: Vector2<f64>, now: Instant, dt: Duration) {
         self.right_stick.handle(
             stick,
+            StickSide::Right,
             &self.settings,
             &mut self.buttons,
             &mut self.mouse,
