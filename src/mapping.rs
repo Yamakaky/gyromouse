@@ -242,15 +242,15 @@ impl Buttons {
             let binding = self.find_binding(key);
             match self.state[key].status {
                 KeyStatus::Down => {
-                    if binding.on_hold_down.len() > 0 {
-                        if now.duration_since(self.state[key].last_update) >= self.hold_delay {
-                            Self::actions(
-                                &binding.on_hold_down,
-                                &mut self.current_layers,
-                                &mut self.ext_actions,
-                            );
-                            self.state[key].status = KeyStatus::Hold;
-                        }
+                    if !binding.on_hold_down.is_empty()
+                        && now.duration_since(self.state[key].last_update) >= self.hold_delay
+                    {
+                        Self::actions(
+                            &binding.on_hold_down,
+                            &mut self.current_layers,
+                            &mut self.ext_actions,
+                        );
+                        self.state[key].status = KeyStatus::Hold;
                     }
                 }
                 KeyStatus::DoubleUp => {
@@ -316,7 +316,7 @@ impl Buttons {
             if binding.on_hold_up.is_empty()
                 || now.duration_since(self.state[key].last_update) < self.hold_delay
             {
-                if binding.on_double_click.len() > 0 {
+                if !binding.on_double_click.is_empty() {
                     match self.state[key].status {
                         KeyStatus::DoubleDown => {
                             Self::actions(
@@ -334,7 +334,7 @@ impl Buttons {
                 } else {
                     Self::maybe_clicks(&binding, &mut self.current_layers, &mut self.ext_actions);
                 }
-            } else if binding.on_hold_up.len() > 0 {
+            } else if !binding.on_hold_up.is_empty() {
                 Self::actions(
                     &binding.on_hold_up,
                     &mut self.current_layers,
