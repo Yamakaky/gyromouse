@@ -134,11 +134,19 @@ fn binding(input: Input) -> IRes<'_, Cmd> {
 
 fn setting(input: Input) -> IRes<'_, Setting> {
     alt((
-        stick_mode,
         f64_setting("TRIGGER_THRESHOLD", Setting::TriggerThreshold),
         trigger_mode,
         gyro_setting,
-        ring_mode,
+        stick_mode_setting("LEFT_STICK_MODE", Setting::LeftStickMode),
+        stick_mode_setting("RIGHT_STICK_MODE", Setting::RightStickMode),
+        stick_mode_setting("MOTION_STICK_MODE", |v| {
+            Setting::Stick(StickSetting::Motion(MotionStickSetting::StickMode(v)))
+        }),
+        ring_mode_setting("LEFT_RING_MODE", Setting::LeftRingMode),
+        ring_mode_setting("RIGHT_RING_MODE", Setting::RightRingMode),
+        ring_mode_setting("MOTION_RING_MODE", |v| {
+            Setting::Stick(StickSetting::Motion(MotionStickSetting::RingMode(v)))
+        }),
         map(stick_setting, Setting::Stick),
         map(mouse_setting, Setting::Mouse),
     ))(input)
@@ -185,6 +193,12 @@ fn stick_setting(input: Input) -> IRes<'_, StickSetting> {
     alt((
         f64_setting("STICK_DEADZONE_INNER", StickSetting::Deadzone),
         f64_setting("STICK_DEADZONE_OUTER", |v| StickSetting::FullZone(1. - v)),
+        f64_setting("MOTION_DEADZONE_INNER", |v| {
+            StickSetting::Motion(MotionStickSetting::Deadzone(Deg(v)))
+        }),
+        f64_setting("MOTION_DEADZONE_OUTER", |v| {
+            StickSetting::Motion(MotionStickSetting::Fullzone(Deg(1. - v)))
+        }),
         f64_setting("STICK_SENS", |v| {
             StickSetting::Aim(AimStickSetting::Sens(v))
         }),
@@ -196,6 +210,9 @@ fn stick_setting(input: Input) -> IRes<'_, StickSetting> {
         }),
         setting_invert("RIGHT_STICK_AXIS", |x, y| {
             StickSetting::Aim(AimStickSetting::RightAxis(x, y))
+        }),
+        setting_invert("MOTION_STICK_AXIS", |x, y| {
+            StickSetting::Motion(MotionStickSetting::Axis(x, y))
         }),
         f64_setting("STICK_ACCELERATION_RATE", |v| {
             StickSetting::Aim(AimStickSetting::AccelerationRate(v))
@@ -250,26 +267,21 @@ fn setting_invert<O>(
     }
 }
 
-fn ring_mode(input: Input) -> IRes<'_, Setting> {
-    let (input, tag) = alt((
-        tag_no_case("LEFT_RING_MODE"),
-        tag_no_case("RIGHT_RING_MODE"),
-    ))(input)?;
-    let (input, mode) = alt((
-        value(RingMode::Inner, tag_no_case("INNER")),
-        value(RingMode::Outer, tag_no_case("OUTER")),
-    ))
-    .preceded_by(equal_with_space)
-    .cut()
-    .parse(input)?;
-    Ok((
-        input,
-        if tag == "LEFT_RING_MODE" {
-            Setting::LeftRingMode(mode)
-        } else {
-            Setting::RightRingMode(mode)
-        },
-    ))
+fn ring_mode_setting<O>(
+    tag: &'static str,
+    value_map: impl Fn(RingMode) -> O,
+) -> impl FnMut(Input) -> IRes<'_, O> {
+    move |input| {
+        let (input, _) = tag_no_case(tag)(input)?;
+        let (input, _) = equal_with_space.cut().parse(input)?;
+        let (input, mode) = alt((
+            value(RingMode::Inner, tag_no_case("INNER")),
+            value(RingMode::Outer, tag_no_case("OUTER")),
+        ))
+        .cut()
+        .parse(input)?;
+        Ok((input, value_map(mode)))
+    }
 }
 
 fn gyro_setting(input: Input) -> IRes<'_, Setting> {
@@ -309,28 +321,26 @@ fn gyro_space(input: Input) -> IRes<'_, GyroSetting> {
     Ok((input, GyroSetting::Space(space)))
 }
 
-fn stick_mode(input: Input) -> IRes<'_, Setting> {
-    let (input, key) = alt((
-        tag_no_case("LEFT_STICK_MODE"),
-        tag_no_case("RIGHT_STICK_MODE"),
-    ))(input)?;
-    let (input, mode) = alt((
-        value(StickMode::Aim, tag_no_case("AIM")),
-        value(StickMode::FlickOnly, tag_no_case("FLICK_ONLY")),
-        value(StickMode::Flick, tag_no_case("FLICK")),
-        value(StickMode::MouseArea, tag_no_case("MOUSE_AREA")),
-        value(StickMode::MouseRing, tag_no_case("MOUSE_RING")),
-        value(StickMode::NoMouse, tag_no_case("NO_MOUSE")),
-        value(StickMode::RotateOnly, tag_no_case("ROTATE_ONLY")),
-        value(StickMode::ScrollWheel, tag_no_case("SCROLL_WHEEL")),
-    ))
-    .preceded_by(equal_with_space)
-    .cut()
-    .parse(input)?;
-    if key == "LEFT_STICK_MODE" {
-        Ok((input, Setting::LeftStickMode(mode)))
-    } else {
-        Ok((input, Setting::RightStickMode(mode)))
+fn stick_mode_setting<O>(
+    tag: &'static str,
+    value_map: impl Fn(StickMode) -> O,
+) -> impl FnMut(Input) -> IRes<'_, O> {
+    move |input| {
+        let (input, _) = tag_no_case(tag)(input)?;
+        let (input, _) = equal_with_space.cut().parse(input)?;
+        let (input, mode) = alt((
+            value(StickMode::Aim, tag_no_case("AIM")),
+            value(StickMode::FlickOnly, tag_no_case("FLICK_ONLY")),
+            value(StickMode::Flick, tag_no_case("FLICK")),
+            value(StickMode::MouseArea, tag_no_case("MOUSE_AREA")),
+            value(StickMode::MouseRing, tag_no_case("MOUSE_RING")),
+            value(StickMode::NoMouse, tag_no_case("NO_MOUSE")),
+            value(StickMode::RotateOnly, tag_no_case("ROTATE_ONLY")),
+            value(StickMode::ScrollWheel, tag_no_case("SCROLL_WHEEL")),
+        ))
+        .cut()
+        .parse(input)?;
+        Ok((input, value_map(mode)))
     }
 }
 

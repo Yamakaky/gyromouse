@@ -119,6 +119,7 @@ impl StickSettings {
             StickSetting::Flick(s) => self.flick.apply(s),
             StickSetting::Scroll(s) => self.scroll.apply(s),
             StickSetting::Area(s) => self.area.apply(s),
+            StickSetting::Motion(s) => self.motion.apply(s),
         }
     }
 }
@@ -347,6 +348,17 @@ impl MouseSettings {
             }
             MouseSetting::RealWorldCalibration(c) => self.real_world_calibration = c,
             MouseSetting::InGameSens(s) => self.in_game_sens = s,
+        }
+    }
+}
+impl MotionStickSettings {
+    fn apply(&mut self, setting: MotionStickSetting) {
+        match setting {
+            MotionStickSetting::StickMode(m) => self.mode = m,
+            MotionStickSetting::RingMode(m) => self.ring_mode = m,
+            MotionStickSetting::Deadzone(m) => self.deadzone = m,
+            MotionStickSetting::Fullzone(m) => self.fullzone = m,
+            MotionStickSetting::Axis(v1, v2) => self.axis = vec2(v1, v2.unwrap_or(v1)),
         }
     }
 }

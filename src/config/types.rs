@@ -107,6 +107,7 @@ pub enum StickSetting {
     Flick(FlickStickSetting),
     Scroll(ScrollStickSetting),
     Area(AreaStickSetting),
+    Motion(MotionStickSetting),
 }
 
 #[derive(Debug, Copy, Clone)]
@@ -136,6 +137,15 @@ pub enum AreaStickSetting {
     ScreenResolutionX(u32),
     ScreenResolutionY(u32),
     Radius(u32),
+}
+
+#[derive(Debug, Copy, Clone)]
+pub enum MotionStickSetting {
+    StickMode(StickMode),
+    RingMode(RingMode),
+    Deadzone(Deg<f64>),
+    Fullzone(Deg<f64>),
+    Axis(InvertMode, Option<InvertMode>),
 }
 
 #[derive(Debug, Copy, Clone)]

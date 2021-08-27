@@ -1,4 +1,4 @@
-use cgmath::{vec2, InnerSpace, Rad};
+use cgmath::{vec2, ElementWise, InnerSpace, Rad};
 
 use crate::{
     config::settings::Settings,
@@ -28,7 +28,8 @@ impl MotionStick {
         dt: std::time::Duration,
     ) {
         let up_vector = up_vector.normalize();
-        let stick = vec2(-up_vector.x.asin(), up_vector.z.asin());
+        let stick = vec2(-up_vector.x.asin(), up_vector.z.asin())
+            .mul_element_wise(settings.stick.motion.axis.cast().expect("cannot fail"));
         let deadzone = Rad::from(settings.stick.motion.deadzone).0;
         let fullzone = Rad::from(settings.stick.motion.fullzone).0;
         let amp = stick.magnitude();
