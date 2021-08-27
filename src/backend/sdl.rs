@@ -36,6 +36,7 @@ impl SDLBackend {
     pub fn new() -> Result<Self> {
         sdl2::hint::set("SDL_JOYSTICK_HIDAPI_PS4_RUMBLE", "1");
         sdl2::hint::set("SDL_JOYSTICK_HIDAPI_JOY_CONS", "1");
+        sdl2::hint::set("SDL_JOYSTICK_HIDAPI_SWITCH_HOME_LED", "0");
         sdl2::hint::set("SDL_GAMECONTROLLER_USE_BUTTON_LABELS", "0");
         let sdl = sdl2::init().expect("can't initialize SDL");
         let game_controller_system = sdl
