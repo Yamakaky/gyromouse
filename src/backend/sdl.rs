@@ -234,7 +234,7 @@ impl Backend for SDLBackend {
                             controller.calibrator = None;
                         }
                     } else {
-                        engine.apply_motion(rotation_speed, acceleration, dt);
+                        engine.apply_motion(rotation_speed, acceleration, now, dt);
                     }
                 }
                 engine.apply_actions(now)?;

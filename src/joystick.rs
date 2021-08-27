@@ -258,7 +258,7 @@ impl Stick for ButtonStick {
         settings: &Settings,
         bindings: &mut Buttons,
         _mouse: &mut Mouse,
-        _now: Instant,
+        now: Instant,
         _dt: Duration,
     ) {
         let settings = &settings.stick;
@@ -269,7 +269,6 @@ impl Stick for ButtonStick {
             return;
         }
         let stick = stick.normalize_to(amp_clamped);
-        let now = std::time::Instant::now();
 
         let epsilon = Rad::from(Deg(90.) - self.angle).0;
 

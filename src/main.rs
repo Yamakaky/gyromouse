@@ -7,6 +7,7 @@ mod engine;
 mod gyromouse;
 mod joystick;
 mod mapping;
+mod motion_stick;
 mod mouse;
 mod opts;
 mod space_mapper;

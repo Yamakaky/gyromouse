@@ -65,6 +65,10 @@ impl Settings {
         self.new_stick(self.right_stick_mode)
     }
 
+    pub fn new_motion_stick(&self) -> Box<dyn Stick> {
+        self.new_stick(self.stick.motion.mode)
+    }
+
     fn new_stick(&self, mode: StickMode) -> Box<dyn Stick> {
         match mode {
             StickMode::Aim => Box::new(CameraStick::new()),
@@ -228,12 +232,20 @@ impl AreaStickSettings {
 
 #[derive(Debug, Clone)]
 pub struct MotionStickSettings {
+    pub mode: StickMode,
+    pub ring_mode: RingMode,
+    pub deadzone: Deg<f64>,
+    pub fullzone: Deg<f64>,
     pub axis: Vector2<InvertMode>,
 }
 
 impl Default for MotionStickSettings {
     fn default() -> Self {
         Self {
+            mode: StickMode::NoMouse,
+            ring_mode: RingMode::Outer,
+            deadzone: Deg(15.),
+            fullzone: Deg(45.),
             axis: vec2(InvertMode::Normal, InvertMode::Normal),
         }
     }

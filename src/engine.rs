@@ -13,6 +13,7 @@ use crate::{
     gyromouse::GyroMouse,
     joystick::{Stick, StickSide},
     mapping::{Buttons, ExtAction},
+    motion_stick::MotionStick,
     mouse::{Mouse, MouseMovement},
     space_mapper::{
         self, LocalSpace, PlayerSpace, SensorFusion, SimpleFusion, SpaceMapper, WorldSpace,
@@ -24,6 +25,7 @@ pub struct Engine {
     settings: Settings,
     left_stick: Box<dyn Stick>,
     right_stick: Box<dyn Stick>,
+    motion_stick: MotionStick,
     buttons: Buttons,
     mouse: Mouse,
     gyro: Gyro,
@@ -41,6 +43,7 @@ impl Engine {
         Ok(Engine {
             left_stick: settings.new_left_stick(),
             right_stick: settings.new_right_stick(),
+            motion_stick: MotionStick::new(&settings),
             buttons,
             mouse,
             gyro: Gyro::new(&settings, calibration),
@@ -150,6 +153,7 @@ impl Engine {
         &mut self,
         rotation_speed: RotationSpeed,
         acceleration: Acceleration,
+        now: Instant,
         dt: Duration,
     ) {
         self.handle_motion_frame(
@@ -157,13 +161,26 @@ impl Engine {
                 rotation_speed,
                 acceleration,
             }],
+            now,
             dt,
         )
     }
 
-    pub fn handle_motion_frame(&mut self, motions: &[Motion], dt: Duration) {
+    pub fn handle_motion_frame(&mut self, motions: &[Motion], now: Instant, dt: Duration) {
         self.gyro
-            .handle_frame(&self.settings, motions, &mut self.mouse, dt)
+            .handle_frame(&self.settings, motions, &mut self.mouse, dt);
+        self.handle_motion_stick(now, dt);
+    }
+
+    fn handle_motion_stick(&mut self, now: Instant, dt: Duration) {
+        self.motion_stick.handle(
+            self.gyro.sensor_fusion.up_vector(),
+            &self.settings,
+            &mut self.buttons,
+            &mut self.mouse,
+            now,
+            dt,
+        )
     }
 
     pub fn set_calibration(&mut self, calibration: Calibration) {

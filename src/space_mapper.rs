@@ -13,6 +13,7 @@ pub fn map_input(
     mapper.map(motion.rotation_speed, up_vector)
 }
 pub trait SensorFusion {
+    fn up_vector(&self) -> Vector3<f64>;
     fn compute_up_vector(&mut self, motion: &Motion, dt: Duration) -> Vector3<f64>;
 }
 
@@ -37,6 +38,9 @@ impl SimpleFusion {
 }
 
 impl SensorFusion for SimpleFusion {
+    fn up_vector(&self) -> Vector3<f64> {
+        self.up_vector
+    }
     fn compute_up_vector(&mut self, motion: &Motion, dt: Duration) -> Vector3<f64> {
         let rotation = Quaternion::from(motion.rotation_speed * dt).invert();
         self.up_vector = rotation.rotate_vector(self.up_vector);
@@ -66,6 +70,10 @@ impl AdaptativeFusion {
 }
 
 impl SensorFusion for AdaptativeFusion {
+    fn up_vector(&self) -> Vector3<f64> {
+        self.up_vector
+    }
+
     // TODO: check http://gyrowiki.jibbsmart.com/blog:finding-gravity-with-sensor-fusion
     // TODO: check normalize() with magnitude 0.
     fn compute_up_vector(&mut self, motion: &Motion, dt: Duration) -> Vector3<f64> {
