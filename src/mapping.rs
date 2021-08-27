@@ -1,7 +1,12 @@
 use enigo::{Key, MouseButton};
 use enum_map::{Enum, EnumMap};
 use hid_gamepad_types::JoyKey;
-use std::{collections::HashMap, fmt::Debug, mem::MaybeUninit, time::Duration};
+use std::{
+    collections::HashMap,
+    fmt::{Debug, Display},
+    mem::MaybeUninit,
+    time::Duration,
+};
 use std::{convert::TryInto, time::Instant};
 
 use crate::ClickType;
@@ -21,6 +26,19 @@ pub enum ExtAction {
     GamepadKeyPress(virtual_gamepad::Key, ClickType),
     GyroOn(ClickType),
     GyroOff(ClickType),
+}
+
+impl Display for ExtAction {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ExtAction::None => f.write_str("none"),
+            ExtAction::KeyPress(k, t) => write!(f, "{:?} {:?}", t, k),
+            ExtAction::MousePress(m, t) => write!(f, "{:?} {:?}", t, m),
+            ExtAction::GamepadKeyPress(k, t) => write!(f, "{:?} {:?}", t, k),
+            ExtAction::GyroOn(t) => write!(f, "{:?} gyro on", t),
+            ExtAction::GyroOff(t) => write!(f, "{:?} gyro off", t),
+        }
+    }
 }
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
