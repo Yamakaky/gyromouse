@@ -37,11 +37,11 @@ TODO
     - [X] Most simple keys (letters, enter, space...)
     - [X] Tap, hold, simultaneous, double and chorded press
     - [X] Modifiers
-    - [ ] Only one key supported by action
+    - [X] Only one key supported by action
 - [ ] Advanced triggers
 - [X] Sticks
     - [X] AIM, FLICK, FLICK_ONLY, ROTATE_ONLY, NO_MOUSE
-    - [ ] MOUSE_RING, MOUSE_AREA, SCROLL_WHEEL
+    - [X] MOUSE_RING, MOUSE_AREA, SCROLL_WHEEL
     - [ ] Ring only for NO_MOUSE
 - [X] Gyro
     - [X] Most settings
