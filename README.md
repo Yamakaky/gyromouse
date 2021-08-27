@@ -2,9 +2,15 @@
 
 A crossplatform mapper from gamepad inputs to keyboard and mouse actions, with special care for good gyro controls. Useful to play games and control a computer from the couch.
 
-## OS support
+## Main features
 
-This project supports both Windows, Linux and macOS.
+- [X] Translation of gamepad buttons, sticks, 3D movement and more into keyboard and mouse actions
+  - [X] Control the mouse in 3D and 2D apps by physically moving the controller ([The gyro is a mouse](http://gyrowiki.jibbsmart.com/blog:good-gyro-controls-part-1:the-gyro-is-a-mouse)). Only on compatible hardware including PS4/5, Switch and Steam controllers.
+  - [X] Advanced input mapping including tap, hold, double click, layers and more
+  - [X] Multiple stick modes including Flick Stick, mouse ring, scroll wheel and more
+- [X] Crossplatform support of Windows, Linux and macOS.
+- [ ] Planned: configuration in a GUI in addition of the text files
+- [ ] Planned: 3D render of the controller with its orientation in a window
 
 ## Quickstart
 
@@ -48,4 +54,3 @@ TODO
     - [X] Local, world and player space
     - [ ] Basic sensor fusion only
     - [ ] Calibration on connection only
-
