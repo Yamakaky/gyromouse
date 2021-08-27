@@ -265,19 +265,17 @@ impl Stick for ButtonStick {
         let amp = stick.magnitude();
         let amp_zones = (amp - settings.deadzone) / (settings.fullzone - settings.deadzone);
         let amp_clamped = amp_zones.max(0.).min(1.);
-        if amp_clamped <= 0. {
-            return;
-        }
-        let stick = stick.normalize_to(amp_clamped);
-
-        let epsilon = Rad::from(Deg(90.) - self.angle).0;
-
-        let angle_r = stick.angle(Vector2::unit_x());
-        let angle_l = stick.angle(-Vector2::unit_x());
-        let angle_u = stick.angle(Vector2::unit_y());
-        let angle_d = stick.angle(-Vector2::unit_y());
 
         if amp_clamped > 0. {
+            let stick = stick.normalize_to(amp_clamped);
+
+            let epsilon = Rad::from(Deg(90.) - self.angle).0;
+
+            let angle_r = stick.angle(Vector2::unit_x());
+            let angle_l = stick.angle(-Vector2::unit_x());
+            let angle_u = stick.angle(Vector2::unit_y());
+            let angle_d = stick.angle(-Vector2::unit_y());
+
             bindings.key(
                 side.ring(),
                 match self.ring_mode {
