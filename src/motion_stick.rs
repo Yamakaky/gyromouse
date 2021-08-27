@@ -41,6 +41,9 @@ impl MotionStick {
             stick = stick.normalize_to(amp_clamped);
         }
 
+        // TODO: Fix motion stick deadzone usage
+        // `stick.handle` will apply its own deadzone setting to our calibrated input,
+        // thinking it's a raw value.
         self.stick
             .handle(stick, StickSide::Motion, settings, bindings, mouse, now, dt)
     }
