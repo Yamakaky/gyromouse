@@ -37,7 +37,7 @@ TODO
 
 ## Configuration
 
-`gyromouse` uses the same configuration format as [JoyShockMapper](https://github.com/Electronicks/JoyShockMapper#commands). See [here](https://github.com/Yamakaky/gyromouse/blob/master/src/config/all-settings-example) for every command parsed by `gyromouse`. Some of them are unimplemented and show a warning when used. Implemented features:
+`gyromouse` uses the same configuration format as [JoyShockMapper](https://github.com/Electronicks/JoyShockMapper#commands). See [here](https://github.com/Yamakaky/gyromouse/blob/master/src/config/all-settings-example) for every command parsed by `gyromouse`, and <https://github.com/Yamakaky/gyromouse/issues> for missing or partial features. Some of them are unimplemented and show a warning when used. Implemented features:
 - [X] Digital inputs
     - [X] Most controller inputs
     - [X] Most simple keys (letters, enter, space...)
