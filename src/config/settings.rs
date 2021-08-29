@@ -15,6 +15,7 @@ pub struct Settings {
     pub left_ring_mode: RingMode,
     pub right_ring_mode: RingMode,
     pub trigger_threshold: f64,
+    // TODO: Support alternative trigger modes
     pub zl_mode: TriggerMode,
     pub zr_mode: TriggerMode,
     pub mouse: MouseSettings,
