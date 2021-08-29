@@ -35,6 +35,7 @@ pub struct SDLBackend {
 impl SDLBackend {
     pub fn new() -> Result<Self> {
         sdl2::hint::set("SDL_JOYSTICK_HIDAPI_PS4_RUMBLE", "1");
+        sdl2::hint::set("SDL_JOYSTICK_HIDAPI_PS5_RUMBLE", "1");
         sdl2::hint::set("SDL_JOYSTICK_HIDAPI_JOY_CONS", "1");
         sdl2::hint::set("SDL_JOYSTICK_HIDAPI_SWITCH_HOME_LED", "0");
         sdl2::hint::set("SDL_GAMECONTROLLER_USE_BUTTON_LABELS", "0");
