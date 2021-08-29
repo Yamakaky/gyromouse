@@ -43,7 +43,6 @@ TODO
     - [X] Most simple keys (letters, enter, space...)
     - [X] Tap, hold, simultaneous, double and chorded press
     - [X] Modifiers
-    - [X] Only one key supported by action
 - [ ] Advanced triggers
 - [X] Sticks
     - [X] AIM, FLICK, FLICK_ONLY, ROTATE_ONLY, NO_MOUSE
