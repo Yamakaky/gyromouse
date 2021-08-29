@@ -38,6 +38,11 @@ impl SDLBackend {
         sdl2::hint::set("SDL_JOYSTICK_HIDAPI_JOY_CONS", "1");
         sdl2::hint::set("SDL_JOYSTICK_HIDAPI_SWITCH_HOME_LED", "0");
         sdl2::hint::set("SDL_GAMECONTROLLER_USE_BUTTON_LABELS", "0");
+
+        // Better Windows support
+        sdl2::hint::set("SDL_HINT_JOYSTICK_ALLOW_BACKGROUND_EVENTS", "1");
+        sdl2::hint::set("SDL_HINT_JOYSTICK_THREAD", "1");
+
         let sdl = sdl2::init().expect("can't initialize SDL");
         let game_controller_system = sdl
             .game_controller()
