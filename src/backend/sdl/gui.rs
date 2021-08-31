@@ -100,24 +100,21 @@ impl Gui {
 
         let mut quit = false;
         let ctx = self.egui_ctx.clone();
-        egui::Window::new("Egui with SDL2 and GL")
-            .auto_sized()
-            .title_bar(false)
-            .show(&ctx, |ui| {
-                ui.separator();
-                ui.label(
+        egui::SidePanel::left("left_panel").show(&ctx, |ui| {
+            ui.separator();
+            ui.label(
     "A simple sine wave plotted onto a GL texture then blitted to an egui managed Image.",
             );
-                ui.label(" ");
-                ui.text_edit_multiline(&mut self.test_str);
-                ui.label(" ");
+            ui.label(" ");
+            ui.text_edit_multiline(&mut self.test_str);
+            ui.label(" ");
 
-                ui.add(egui::Slider::new(&mut self.amplitude, 0.0..=50.0).text("Amplitude"));
-                ui.label(" ");
-                if ui.button("Quit").clicked() {
-                    quit = true;
-                }
-            });
+            ui.add(egui::Slider::new(&mut self.amplitude, 0.0..=50.0).text("Amplitude"));
+            ui.label(" ");
+            if ui.button("Quit").clicked() {
+                quit = true;
+            }
+        });
 
         let (egui_output, paint_cmds) = self.egui_ctx.end_frame();
 
