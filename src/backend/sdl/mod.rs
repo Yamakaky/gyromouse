@@ -1,3 +1,8 @@
+#[cfg(feature = "gui")]
+mod gui;
+#[cfg(feature = "gui")]
+mod triangle;
+
 use std::{
     collections::HashMap,
     thread::sleep,
@@ -24,12 +29,16 @@ use crate::{
     mouse::Mouse,
 };
 
+use self::gui::Gui;
+
 use super::Backend;
 
 pub struct SDLBackend {
     sdl: Sdl,
     game_controller_system: GameControllerSubsystem,
     mouse: Mouse,
+    #[cfg(feature = "gui")]
+    gui: Gui,
 }
 
 impl SDLBackend {
@@ -48,10 +57,16 @@ impl SDLBackend {
         let game_controller_system = sdl
             .game_controller()
             .expect("can't initialize SDL game controller subsystem");
+
+        #[cfg(feature = "gui")]
+        let gui = Gui::new(&sdl);
+
         Ok(Self {
             sdl,
             game_controller_system,
             mouse: Mouse::new(),
+            #[cfg(feature = "gui")]
+            gui,
         })
     }
 }
@@ -181,7 +196,10 @@ impl Backend for SDLBackend {
                             controller.engine.buttons().key_up(sdl_to_sys(button), now);
                         }
                     }
-                    _ => {}
+                    _ => {
+                        #[cfg(feature = "gui")]
+                        self.gui.event(event);
+                    }
                 }
             }
 
@@ -245,6 +263,11 @@ impl Backend for SDLBackend {
                     }
                 }
                 engine.apply_actions(now)?;
+            }
+
+            #[cfg(feature = "gui")]
+            if self.gui.tick(dt) {
+                break 'running;
             }
 
             last_tick = now;
