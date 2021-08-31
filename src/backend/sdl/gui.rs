@@ -1,6 +1,9 @@
 use std::time::Duration;
 
-use egui::CtxRef;
+use egui::{
+    plot::{Line, Plot, Value, Values},
+    CtxRef, ScrollArea,
+};
 use egui_backend::{gl, EguiInputState, Painter};
 use egui_sdl2_gl as egui_backend;
 use sdl2::{
@@ -15,11 +18,18 @@ pub struct Gui {
     egui_input_state: EguiInputState,
     egui_ctx: CtxRef,
     native_pixels_per_point: f32,
-    test_str: String,
     painter: Painter,
     window: Window,
-    amplitude: f32,
     _ctx: GLContext,
+    sens: f64,
+    accel: bool,
+    max_sens: f64,
+    max_thre: f64,
+    min_sens: f64,
+    min_thre: f64,
+    cut: bool,
+    cut_speed: f64,
+    cut_recov: f64,
 }
 
 impl Gui {
@@ -59,19 +69,22 @@ impl Gui {
             ..Default::default()
         });
 
-        let test_str: String =
-            "A text box to write in. Cut, copy, paste commands are available.".to_owned();
-        let amplitude: f32 = 50f32;
-
         Self {
             egui_input_state,
             egui_ctx,
             native_pixels_per_point,
-            test_str,
             painter,
             window,
-            amplitude,
             _ctx: ctx,
+            sens: 1.,
+            accel: true,
+            min_sens: 1.,
+            min_thre: 5.,
+            max_sens: 2.,
+            max_thre: 75.,
+            cut: true,
+            cut_speed: 0.,
+            cut_recov: 5.,
         }
     }
 
@@ -79,7 +92,7 @@ impl Gui {
         egui_backend::input_to_egui(event, &mut self.egui_input_state);
     }
 
-    pub fn tick(&mut self, dt: Duration) -> bool {
+    pub fn tick(&mut self, dt: Duration) {
         self.egui_input_state.input.time = Some(dt.as_secs_f64());
         self.egui_ctx
             .begin_frame(self.egui_input_state.input.take());
@@ -98,22 +111,101 @@ impl Gui {
             gl::Clear(gl::COLOR_BUFFER_BIT);
         }
 
-        let mut quit = false;
         let ctx = self.egui_ctx.clone();
-        egui::SidePanel::left("left_panel").show(&ctx, |ui| {
-            ui.separator();
-            ui.label(
-    "A simple sine wave plotted onto a GL texture then blitted to an egui managed Image.",
-            );
-            ui.label(" ");
-            ui.text_edit_multiline(&mut self.test_str);
-            ui.label(" ");
+        egui::CentralPanel::default().show(&ctx, |ui| {
+            ScrollArea::auto_sized().show(ui, |ui| {
+                let mut values = vec![];
+                let sens = if self.accel { self.min_sens } else { self.sens };
+                if self.cut {
+                    values.extend([
+                        Value::new(0., 0.),
+                        Value::new(self.cut_speed, 0.),
+                        Value::new(self.cut_recov, sens),
+                    ]);
+                } else {
+                    values.push(Value::new(0., sens));
+                }
+                if self.accel {
+                    values.extend([
+                        Value::new(self.min_thre, self.min_sens),
+                        Value::new(self.max_thre, self.max_sens),
+                        Value::new(100., self.max_sens),
+                    ]);
+                } else {
+                    values.push(Value::new(100., self.sens));
+                }
+                let line = Line::new(Values::from_values(values));
+                ui.add(
+                    Plot::new("sens_graph")
+                        .line(line)
+                        .allow_drag(false)
+                        .allow_zoom(false)
+                        .include_y(0.)
+                        .view_aspect(2.)
+                        .width(700.),
+                );
 
-            ui.add(egui::Slider::new(&mut self.amplitude, 0.0..=50.0).text("Amplitude"));
-            ui.label(" ");
-            if ui.button("Quit").clicked() {
-                quit = true;
-            }
+                ui.add(
+                    egui::Slider::new(&mut self.sens, 0.1..=10.0)
+                        .text("Sensitivity")
+                        .fixed_decimals(1),
+                )
+                .on_hover_text("Sensitivity of the gyro");
+                self.sens = self.sens.max(0.);
+                ui.checkbox(&mut self.cut, "Enable cuttoff");
+                ui.group(|ui| {
+                    ui.set_enabled(self.cut);
+                    ui.add(
+                        egui::Slider::new(&mut self.cut_speed, 0.0..=20.0)
+                            .text("Cuttoff speed")
+                            .integer(),
+                    )
+                    .on_hover_text("Rotation speeds below this threshold are ignored");
+                    self.cut_speed = self.cut_speed.clamp(0., self.cut_recov);
+                    ui.add(
+                        egui::Slider::new(&mut self.cut_recov, 1.0..=40.0)
+                            .text("Cuttoff recovery (dps)")
+                            .integer(),
+                    )
+                    .on_hover_text("Rotation speeds above this threshold use the usual settings");
+                    self.cut_recov = self.cut_recov.max(1.);
+                });
+                ui.checkbox(&mut self.accel, "Enable acceleration");
+                ui.group(|ui| {
+                    ui.set_enabled(self.accel);
+                    ui.add(
+                        egui::Slider::new(&mut self.min_sens, 0.1..=self.max_sens)
+                            .text("Slow sensitivity")
+                            .fixed_decimals(1),
+                    )
+                    .on_hover_text("Min sensitivity of the gyro");
+                    self.min_sens = self.min_sens.clamp(0.1, self.max_sens);
+                    ui.add(
+                        egui::Slider::new(&mut self.min_thre, 1.0..=self.max_thre)
+                            .text("Slow threshold (dps)")
+                            .integer(),
+                    )
+                    .on_hover_text("Threshold for slow (degree per second)");
+                    self.min_thre = self.min_thre.clamp(1.0, self.max_thre);
+                    if self.cut {
+                        self.min_thre = self.min_thre.max(self.cut_recov);
+                    }
+                    ui.add(
+                        egui::Slider::new(&mut self.max_sens, 0.1..=20.0)
+                            .text("Fast sensitivity")
+                            .fixed_decimals(1),
+                    )
+                    .on_hover_text("Max sensitivity of the gyro");
+                    self.max_sens = self.max_sens.max(self.min_sens);
+                    ui.add(
+                        egui::Slider::new(&mut self.max_thre, 1.0..=100.0)
+                            .text("Fast threshold (dps)")
+                            .integer(),
+                    )
+                    .on_hover_text("Threshold for max speed (degree per second)");
+                    self.max_thre = self.max_thre.max(self.min_thre);
+                });
+            });
         });
 
         let (egui_output, paint_cmds) = self.egui_ctx.end_frame();
@@ -137,7 +229,5 @@ impl Gui {
         );
 
         self.window.gl_swap_window();
-
-        return quit;
     }
 }

@@ -264,9 +264,7 @@ impl Backend for SDLBackend {
             }
 
             #[cfg(feature = "gui")]
-            if self.gui.tick(dt) {
-                break 'running;
-            }
+            self.gui.tick(dt);
 
             last_tick = now;
             sleep(Duration::from_millis(1));
