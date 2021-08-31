@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use egui::{vec2, Color32, CtxRef, Image, Pos2, Rect, TextureId};
+use egui::{vec2, Color32, CtxRef, Pos2, Rect, TextureId};
 use egui_backend::{gl, EguiInputState, Painter};
 use egui_sdl2_gl as egui_backend;
 use sdl2::{
@@ -11,14 +11,13 @@ use sdl2::{
 const SCREEN_WIDTH: u32 = 800;
 const SCREEN_HEIGHT: u32 = 600;
 
-const PIC_WIDTH: i32 = 320;
+const PIC_WIDTH: i32 = 800;
 const PIC_HEIGHT: i32 = 192;
 
 pub struct Gui {
     egui_input_state: EguiInputState,
     egui_ctx: CtxRef,
     native_pixels_per_point: f32,
-    sine_shift: f32,
     test_str: String,
     painter: Painter,
     chip8_tex_id: TextureId,
@@ -84,9 +83,6 @@ impl Gui {
         let chip8_tex_id =
             painter.new_user_texture((PIC_WIDTH as usize, PIC_HEIGHT as usize), &srgba, false);
 
-        //Some variables to help draw a sine wave
-        let sine_shift = 0f32;
-
         let test_str: String =
             "A text box to write in. Cut, copy, paste commands are available.".to_owned();
         let amplitude: f32 = 50f32;
@@ -96,7 +92,6 @@ impl Gui {
             egui_ctx,
             native_pixels_per_point,
             chip8_tex_id,
-            sine_shift,
             test_str,
             painter,
             window,
@@ -130,20 +125,12 @@ impl Gui {
         }
 
         let mut srgba: Vec<Color32> = Vec::new();
-        let mut angle = 0f32;
         //Draw a cool sine wave in a buffer.
-        for y in 0..PIC_HEIGHT {
-            for x in 0..PIC_WIDTH {
+        for _ in 0..PIC_HEIGHT {
+            for _ in 0..PIC_WIDTH {
                 srgba.push(Color32::BLACK);
-                if y == PIC_HEIGHT - 1 {
-                    let y = self.amplitude * (angle * 3.142f32 / 180f32 + self.sine_shift).sin();
-                    let y = PIC_HEIGHT as f32 / 2f32 - y;
-                    srgba[(y as i32 * PIC_WIDTH + x) as usize] = Color32::YELLOW;
-                    angle += 360f32 / PIC_WIDTH as f32;
-                }
             }
         }
-        self.sine_shift += 0.1f32;
 
         //This updates the previously initialized texture with new data.
         //If we weren't updating the texture, this call wouldn't be required.
@@ -153,12 +140,6 @@ impl Gui {
         let mut quit = false;
         let ctx = self.egui_ctx.clone();
         egui::Window::new("Egui with SDL2 and GL").show(&ctx, |ui| {
-            //Image just needs a texture id reference, so we just pass it the texture id that was returned to us
-            //when we previously initialized the texture.
-            ui.add(Image::new(
-                self.chip8_tex_id,
-                vec2(PIC_WIDTH as f32, PIC_HEIGHT as f32),
-            ));
             ui.separator();
             ui.label(
     "A simple sine wave plotted onto a GL texture then blitted to an egui managed Image.",
