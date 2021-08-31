@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use egui::{vec2, Color32, CtxRef, Pos2, Rect, TextureId};
+use egui::CtxRef;
 use egui_backend::{gl, EguiInputState, Painter};
 use egui_sdl2_gl as egui_backend;
 use sdl2::{
@@ -11,16 +11,12 @@ use sdl2::{
 const SCREEN_WIDTH: u32 = 800;
 const SCREEN_HEIGHT: u32 = 600;
 
-const PIC_WIDTH: i32 = 800;
-const PIC_HEIGHT: i32 = 192;
-
 pub struct Gui {
     egui_input_state: EguiInputState,
     egui_ctx: CtxRef,
     native_pixels_per_point: f32,
     test_str: String,
     painter: Painter,
-    chip8_tex_id: TextureId,
     window: Window,
     amplitude: f32,
     _ctx: GLContext,
@@ -49,7 +45,7 @@ impl Gui {
         // Create a window context
         let ctx = window.gl_create_context().unwrap();
 
-        let mut painter = egui_backend::Painter::new(&video_subsystem, SCREEN_WIDTH, SCREEN_HEIGHT);
+        let painter = egui_backend::Painter::new(&video_subsystem, SCREEN_WIDTH, SCREEN_HEIGHT);
         let egui_ctx = egui::CtxRef::default();
 
         debug_assert_eq!(gl_attr.context_profile(), GLProfile::Core);
@@ -57,31 +53,11 @@ impl Gui {
 
         let native_pixels_per_point = 96f32 / video_subsystem.display_dpi(0).unwrap().0;
 
-        let (width, height) = window.size();
-
         let egui_input_state = egui_backend::EguiInputState::new(egui::RawInput {
-            screen_rect: Some(Rect::from_min_size(
-                Pos2::new(0f32, 0f32),
-                vec2(width as f32, height as f32) / native_pixels_per_point,
-            )),
+            screen_rect: None,
             pixels_per_point: Some(native_pixels_per_point),
             ..Default::default()
         });
-        let mut srgba: Vec<Color32> = Vec::new();
-
-        //For now we will just set everything to black, because
-        //we will be updating it dynamically later. However, this could just as
-        //easily have been some actual picture data loaded in.
-        for _ in 0..PIC_HEIGHT {
-            for _ in 0..PIC_WIDTH {
-                srgba.push(Color32::BLACK);
-            }
-        }
-
-        //The user texture is what allows us to mix Egui and GL rendering contexts.
-        //Egui just needs the texture id, as the actual texture is managed by the backend.
-        let chip8_tex_id =
-            painter.new_user_texture((PIC_WIDTH as usize, PIC_HEIGHT as usize), &srgba, false);
 
         let test_str: String =
             "A text box to write in. Cut, copy, paste commands are available.".to_owned();
@@ -91,7 +67,6 @@ impl Gui {
             egui_input_state,
             egui_ctx,
             native_pixels_per_point,
-            chip8_tex_id,
             test_str,
             painter,
             window,
@@ -105,7 +80,6 @@ impl Gui {
     }
 
     pub fn tick(&mut self, dt: Duration) -> bool {
-        dbg!(dt);
         self.egui_input_state.input.time = Some(dt.as_secs_f64());
         self.egui_ctx
             .begin_frame(self.egui_input_state.input.take());
@@ -124,36 +98,26 @@ impl Gui {
             gl::Clear(gl::COLOR_BUFFER_BIT);
         }
 
-        let mut srgba: Vec<Color32> = Vec::new();
-        //Draw a cool sine wave in a buffer.
-        for _ in 0..PIC_HEIGHT {
-            for _ in 0..PIC_WIDTH {
-                srgba.push(Color32::BLACK);
-            }
-        }
-
-        //This updates the previously initialized texture with new data.
-        //If we weren't updating the texture, this call wouldn't be required.
-        self.painter
-            .update_user_texture_data(self.chip8_tex_id, &srgba);
-
         let mut quit = false;
         let ctx = self.egui_ctx.clone();
-        egui::Window::new("Egui with SDL2 and GL").show(&ctx, |ui| {
-            ui.separator();
-            ui.label(
+        egui::Window::new("Egui with SDL2 and GL")
+            .auto_sized()
+            .title_bar(false)
+            .show(&ctx, |ui| {
+                ui.separator();
+                ui.label(
     "A simple sine wave plotted onto a GL texture then blitted to an egui managed Image.",
             );
-            ui.label(" ");
-            ui.text_edit_multiline(&mut self.test_str);
-            ui.label(" ");
+                ui.label(" ");
+                ui.text_edit_multiline(&mut self.test_str);
+                ui.label(" ");
 
-            ui.add(egui::Slider::new(&mut self.amplitude, 0.0..=50.0).text("Amplitude"));
-            ui.label(" ");
-            if ui.button("Quit").clicked() {
-                quit = true;
-            }
-        });
+                ui.add(egui::Slider::new(&mut self.amplitude, 0.0..=50.0).text("Amplitude"));
+                ui.label(" ");
+                if ui.button("Quit").clicked() {
+                    quit = true;
+                }
+            });
 
         let (egui_output, paint_cmds) = self.egui_ctx.end_frame();
 
