@@ -8,8 +8,6 @@ use sdl2::{
     video::{GLContext, GLProfile, Window},
 };
 
-use crate::backend::sdl::triangle::Triangle;
-
 const SCREEN_WIDTH: u32 = 800;
 const SCREEN_HEIGHT: u32 = 600;
 
@@ -21,7 +19,6 @@ pub struct Gui {
     egui_ctx: CtxRef,
     native_pixels_per_point: f32,
     sine_shift: f32,
-    triangle: Triangle,
     test_str: String,
     painter: Painter,
     chip8_tex_id: TextureId,
@@ -94,16 +91,12 @@ impl Gui {
             "A text box to write in. Cut, copy, paste commands are available.".to_owned();
         let amplitude: f32 = 50f32;
 
-        //We will draw a crisp white triangle using OpenGL.
-        let triangle = Triangle::new();
-
         Self {
             egui_input_state,
             egui_ctx,
             native_pixels_per_point,
             chip8_tex_id,
             sine_shift,
-            triangle,
             test_str,
             painter,
             window,
@@ -135,8 +128,6 @@ impl Gui {
             gl::ClearColor(0.3, 0.6, 0.3, 1.0);
             gl::Clear(gl::COLOR_BUFFER_BIT);
         }
-        //Then draw our triangle.
-        self.triangle.draw();
 
         let mut srgba: Vec<Color32> = Vec::new();
         let mut angle = 0f32;

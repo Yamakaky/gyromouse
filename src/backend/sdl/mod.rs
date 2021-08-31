@@ -1,7 +1,5 @@
 #[cfg(feature = "gui")]
 mod gui;
-#[cfg(feature = "gui")]
-mod triangle;
 
 use std::{
     collections::HashMap,
