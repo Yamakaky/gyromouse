@@ -209,15 +209,16 @@ impl Backend for SDLBackend {
                             controller.engine.buttons().key_up(sdl_to_sys(button), now);
                         }
                     }
+                    #[cfg(feature = "gui")]
                     _ => {
                         for controller in controllers.values_mut() {
                             controller.overlay.event(&event);
                         }
-                        
-                        match 
-                        #[cfg(feature = "gui")]
+
                         self.gui.event(event);
                     }
+                    #[cfg(not(feature = "gui"))]
+                    _ => {}
                 }
             }
 

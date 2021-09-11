@@ -88,7 +88,11 @@ impl Gui {
     }
 
     pub fn event(&mut self, event: Event) {
-        egui_backend::input_to_egui(event, &mut self.egui_input_state);
+        match event {
+            // https://github.com/ArjunNair/egui_sdl2_gl/issues/11
+            Event::Window { window_id, .. } if window_id != self.window.id() => {}
+            _ => egui_backend::input_to_egui(event, &mut self.egui_input_state),
+        }
     }
 
     pub fn tick(&mut self, dt: Duration) {
