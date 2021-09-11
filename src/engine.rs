@@ -3,7 +3,7 @@ use std::{
     time::{Duration, Instant},
 };
 
-use cgmath::Vector2;
+use cgmath::{Vector2, Vector3};
 use enigo::{KeyboardControllable, MouseControllable};
 use hid_gamepad_types::{Acceleration, Motion, RotationSpeed};
 
@@ -189,6 +189,10 @@ impl Engine {
 
     pub fn set_calibration(&mut self, calibration: Calibration) {
         self.gyro.calibration = calibration;
+    }
+
+    pub fn up_vector(&self) -> Vector3<f64> {
+        self.gyro.sensor_fusion.up_vector()
     }
 }
 

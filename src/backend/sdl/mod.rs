@@ -1,5 +1,7 @@
 #[cfg(feature = "gui")]
 mod gui;
+#[cfg(feature = "gui")]
+mod overlay;
 
 use std::{
     collections::HashMap,
@@ -7,7 +9,7 @@ use std::{
     time::{Duration, Instant},
 };
 
-use anyhow::{bail, Result};
+use anyhow::{bail, Context, Result};
 use cgmath::{vec2, Vector3};
 use hid_gamepad_types::{Acceleration, JoyKey, Motion, RotationSpeed};
 use sdl2::{
@@ -16,10 +18,11 @@ use sdl2::{
     event::Event,
     keyboard::Keycode,
     sensor::SensorType,
-    GameControllerSubsystem, Sdl,
+    GameControllerSubsystem, Sdl, VideoSubsystem,
 };
 
 use crate::{
+    backend::sdl::overlay::Overlay,
     calibration::{BetterCalibration, Calibration},
     config::settings::Settings,
     engine::Engine,
@@ -37,6 +40,8 @@ pub struct SDLBackend {
     mouse: Mouse,
     #[cfg(feature = "gui")]
     gui: Gui,
+    #[cfg(feature = "gui")]
+    video_subsystem: VideoSubsystem,
 }
 
 impl SDLBackend {
@@ -57,7 +62,9 @@ impl SDLBackend {
             .expect("can't initialize SDL game controller subsystem");
 
         #[cfg(feature = "gui")]
-        let gui = Gui::new(&sdl);
+        let video_subsystem = sdl.video().expect("can't initialize SDL video");
+        #[cfg(feature = "gui")]
+        let gui = Gui::new(&video_subsystem);
 
         Ok(Self {
             sdl,
@@ -65,6 +72,8 @@ impl SDLBackend {
             mouse: Mouse::new(),
             #[cfg(feature = "gui")]
             gui,
+            #[cfg(feature = "gui")]
+            video_subsystem,
         })
     }
 }
@@ -153,6 +162,10 @@ impl Backend for SDLBackend {
                             None
                         };
 
+                        #[cfg(feature = "gui")]
+                        let overlay = Overlay::new(&self.video_subsystem)
+                            .context("overlay creation error")?;
+
                         let engine = Engine::new(
                             settings.clone(),
                             bindings.clone(),
@@ -165,6 +178,8 @@ impl Backend for SDLBackend {
                                 controller,
                                 engine,
                                 calibrator,
+                                #[cfg(feature = "gui")]
+                                overlay,
                             },
                         );
                     }
@@ -195,6 +210,11 @@ impl Backend for SDLBackend {
                         }
                     }
                     _ => {
+                        for controller in controllers.values_mut() {
+                            controller.overlay.event(&event);
+                        }
+                        
+                        match 
                         #[cfg(feature = "gui")]
                         self.gui.event(event);
                     }
@@ -261,6 +281,9 @@ impl Backend for SDLBackend {
                     }
                 }
                 engine.apply_actions(now)?;
+
+                #[cfg(feature = "gui")]
+                controller.overlay.tick(engine.up_vector())?;
             }
 
             #[cfg(feature = "gui")]
@@ -278,6 +301,8 @@ struct ControllerState {
     controller: GameController,
     engine: Engine,
     calibrator: Option<BetterCalibration>,
+    #[cfg(feature = "gui")]
+    overlay: Overlay,
 }
 
 fn sdl_to_sys(button: Button) -> JoyKey {

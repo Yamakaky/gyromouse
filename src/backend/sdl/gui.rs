@@ -9,6 +9,7 @@ use egui_sdl2_gl as egui_backend;
 use sdl2::{
     event::Event,
     video::{GLContext, GLProfile, Window},
+    VideoSubsystem,
 };
 
 const SCREEN_WIDTH: u32 = 800;
@@ -33,9 +34,7 @@ pub struct Gui {
 }
 
 impl Gui {
-    pub fn new(sdl: &sdl2::Sdl) -> Self {
-        let video_subsystem = sdl.video().unwrap();
-
+    pub fn new(video_subsystem: &VideoSubsystem) -> Self {
         let gl_attr = video_subsystem.gl_attr();
         gl_attr.set_context_profile(GLProfile::Core);
 
