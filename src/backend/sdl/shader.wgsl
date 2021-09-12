@@ -4,6 +4,12 @@ struct VertexOutput {
 };
 
 [[block]]
+struct PushConstants {
+    rot: mat4x4<f32>;
+};
+var<push_constant> push: PushConstants;
+
+[[block]]
 struct Locals {
     transform: mat4x4<f32>;
 };
@@ -17,7 +23,7 @@ fn vs_main(
 ) -> VertexOutput {
     var out: VertexOutput;
     out.tex_coord = tex_coord;
-    out.position = r_locals.transform * position;
+    out.position = r_locals.transform * push.rot * position;
     return out;
 }
 

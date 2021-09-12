@@ -34,6 +34,8 @@ pub enum ClickType {
 }
 
 fn main() {
+    env_logger::init();
+
     // https://github.com/rust-cli/human-panic/issues/77
     human_panic::setup_panic!(human_panic::Metadata {
         version: env!("CARGO_PKG_VERSION").into(),

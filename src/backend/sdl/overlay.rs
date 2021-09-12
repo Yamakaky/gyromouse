@@ -2,6 +2,7 @@ use std::{borrow::Cow, convert::TryInto, mem};
 
 use anyhow::Result;
 use bytemuck::{Pod, Zeroable};
+use cgmath::{vec3, Matrix4, Quaternion};
 use futures::executor::block_on;
 use sdl2::{
     event::{Event, WindowEvent},
@@ -39,11 +40,15 @@ impl Overlay {
             compatible_surface: Some(&surface),
         }))
         .unwrap();
+        let limits = wgpu::Limits {
+            max_push_constant_size: 64,
+            ..wgpu::Limits::downlevel_defaults()
+        };
         let (device, queue) = block_on(adapter.request_device(
             &wgpu::DeviceDescriptor {
-                label: None,
-                features: wgpu::Features::empty(),
-                limits: wgpu::Limits::downlevel_defaults(),
+                label: Some("my device"),
+                features: wgpu::Features::PUSH_CONSTANTS,
+                limits: limits.clone(),
             },
             None,
         ))?;
@@ -75,7 +80,7 @@ impl Overlay {
 
         // Create pipeline layout
         let bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-            label: None,
+            label: Some("Bind group Layout"),
             entries: &[
                 wgpu::BindGroupLayoutEntry {
                     binding: 0,
@@ -100,9 +105,12 @@ impl Overlay {
             ],
         });
         let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-            label: None,
+            label: Some("my pipeline layout"),
             bind_group_layouts: &[&bind_group_layout],
-            push_constant_ranges: &[],
+            push_constant_ranges: &[wgpu::PushConstantRange {
+                stages: wgpu::ShaderStages::VERTEX,
+                range: 0..64,
+            }],
         });
 
         // Create the texture
@@ -114,7 +122,7 @@ impl Overlay {
             depth_or_array_layers: 1,
         };
         let texture = device.create_texture(&wgpu::TextureDescriptor {
-            label: None,
+            label: Some("fractal"),
             size: texture_extent,
             mip_level_count: 1,
             sample_count: 1,
@@ -156,11 +164,11 @@ impl Overlay {
                     resource: wgpu::BindingResource::TextureView(&texture_view),
                 },
             ],
-            label: None,
+            label: Some("bgroup"),
         });
 
         let shader = device.create_shader_module(&wgpu::ShaderModuleDescriptor {
-            label: None,
+            label: Some("shad"),
             source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(include_str!("shader.wgsl"))),
         });
 
@@ -182,7 +190,7 @@ impl Overlay {
         }];
 
         let pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
-            label: None,
+            label: Some("my pipeline"),
             layout: Some(&pipeline_layout),
             vertex: wgpu::VertexState {
                 module: &shader,
@@ -266,6 +274,11 @@ impl Overlay {
             rpass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
             rpass.pop_debug_group();
             rpass.insert_debug_marker("Draw!");
+            let rot = Matrix4::from(Quaternion::from_arc(up_vector, vec3(0., 1., 0.), None))
+                .cast::<f32>()
+                .unwrap();
+            let rot_raw: [u8; 4 * 16] = unsafe { std::mem::transmute(rot) };
+            rpass.set_push_constants(wgpu::ShaderStages::VERTEX, 0, &rot_raw);
             rpass.draw_indexed(0..self.index_count as u32, 0, 0..1);
         }
 

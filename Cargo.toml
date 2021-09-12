@@ -36,6 +36,7 @@ egui_sdl2_gl = { git = "https://github.com/Yamakaky/egui_sdl2_gl", branch = "yam
 wgpu = { version = "0.10.1", optional = true }
 futures = { version = "0.3.17", optional = true }
 bytemuck = { version = "1.7.2", optional = true, features = ["derive"] }
+env_logger = "0.9.0"
 
 [dependencies.sdl2]
 git = "https://github.com/Yamakaky/rust-sdl2"
