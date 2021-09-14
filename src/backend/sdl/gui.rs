@@ -53,6 +53,7 @@ impl Gui {
 
         // Create a window context
         let ctx = window.gl_create_context().unwrap();
+        video_subsystem.gl_set_swap_interval(0).unwrap();
 
         let painter = egui_backend::Painter::new(&video_subsystem, SCREEN_WIDTH, SCREEN_HEIGHT);
         let egui_ctx = egui::CtxRef::default();
