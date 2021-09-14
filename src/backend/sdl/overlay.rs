@@ -41,7 +41,6 @@ impl Overlay {
         }))
         .unwrap();
 
-        assert!(adapter.limits().max_push_constant_size > 64);
         let limits = wgpu::Limits {
             max_push_constant_size: 64,
             ..wgpu::Limits::downlevel_defaults()
