@@ -118,10 +118,19 @@ impl Backend for SDLBackend {
         let mut controllers: HashMap<u32, ControllerState> = HashMap::new();
 
         let mut last_tick = Instant::now();
+        let mut last_sec = Instant::now();
+        let mut fps_count = 0;
 
         'running: loop {
             let now = Instant::now();
             let dt = now.duration_since(last_tick);
+
+            fps_count += 1;
+            if now.duration_since(last_sec) >= Duration::from_secs(1) {
+                println!("fps: {}", fps_count);
+                fps_count = 0;
+                last_sec = now;
+            }
 
             for event in event_pump.poll_iter() {
                 match event {
