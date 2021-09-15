@@ -3,7 +3,6 @@ use std::{borrow::Cow, convert::TryInto, mem};
 use anyhow::Result;
 use bytemuck::{Pod, Zeroable};
 use cgmath::{vec3, Matrix4, Quaternion};
-use futures::executor::block_on;
 use sdl2::{
     event::{Event, WindowEvent},
     video::Window,
@@ -35,7 +34,7 @@ impl Overlay {
 
         let instance = wgpu::Instance::new(Backends::PRIMARY);
         let surface = unsafe { instance.create_surface(&window) };
-        let adapter = block_on(instance.request_adapter(&wgpu::RequestAdapterOptions {
+        let adapter = pollster::block_on(instance.request_adapter(&wgpu::RequestAdapterOptions {
             power_preference: wgpu::PowerPreference::HighPerformance,
             compatible_surface: Some(&surface),
         }))
@@ -45,7 +44,7 @@ impl Overlay {
             max_push_constant_size: 64,
             ..wgpu::Limits::downlevel_defaults()
         };
-        let (device, queue) = block_on(adapter.request_device(
+        let (device, queue) = pollster::block_on(adapter.request_device(
             &wgpu::DeviceDescriptor {
                 label: Some("my device"),
                 features: wgpu::Features::PUSH_CONSTANTS,
@@ -229,7 +228,7 @@ impl Overlay {
         match event {
             Event::Window {
                 window_id,
-                win_event: WindowEvent::Resized(width, height),
+                win_event: WindowEvent::SizeChanged(width, height),
                 ..
             } if *window_id == self.window.id() => {
                 self.config.width = (*width).try_into().unwrap();
