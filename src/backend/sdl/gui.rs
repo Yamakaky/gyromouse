@@ -4,13 +4,10 @@ use egui::{
     plot::{Line, Plot, Value, Values},
     CtxRef, ScrollArea,
 };
-use egui_backend::{gl, EguiInputState, Painter};
-use egui_sdl2_gl as egui_backend;
-use sdl2::{
-    event::Event,
-    video::{GLContext, GLProfile, Window},
-    VideoSubsystem,
-};
+use egui_sdl2_gl::EguiInputState;
+use egui_wgpu_backend::{RenderPass, ScreenDescriptor};
+use pollster::block_on;
+use sdl2::{event::Event, video::Window, VideoSubsystem};
 
 const SCREEN_WIDTH: u32 = 800;
 const SCREEN_HEIGHT: u32 = 600;
@@ -18,10 +15,12 @@ const SCREEN_HEIGHT: u32 = 600;
 pub struct Gui {
     egui_input_state: EguiInputState,
     egui_ctx: CtxRef,
+    egui_rpass: RenderPass,
+    config: wgpu::SurfaceConfiguration,
+    queue: wgpu::Queue,
+    device: wgpu::Device,
     native_pixels_per_point: f32,
-    painter: Painter,
     window: Window,
-    _ctx: GLContext,
     sens: f64,
     accel: bool,
     max_sens: f64,
@@ -31,39 +30,55 @@ pub struct Gui {
     cut: bool,
     cut_speed: f64,
     cut_recov: f64,
+    surface: wgpu::Surface,
 }
 
 impl Gui {
-    pub fn new(video_subsystem: &VideoSubsystem) -> Self {
-        let gl_attr = video_subsystem.gl_attr();
-        gl_attr.set_context_profile(GLProfile::Core);
-
-        // OpenGL 3.2 is the minimum that we will support.
-        gl_attr.set_context_version(3, 2);
-
+    pub fn new(video_subsystem: &VideoSubsystem, wgpu_instance: &wgpu::Instance) -> Self {
         let window = video_subsystem
             .window(
                 "Demo: Egui backend for SDL2 + GL",
                 SCREEN_WIDTH,
                 SCREEN_HEIGHT,
             )
-            .opengl()
             .build()
             .unwrap();
 
-        // Create a window context
-        let ctx = window.gl_create_context().unwrap();
-        video_subsystem.gl_set_swap_interval(0).unwrap();
+        let surface = unsafe { wgpu_instance.create_surface(&window) };
 
-        let painter = egui_backend::Painter::new(&video_subsystem, SCREEN_WIDTH, SCREEN_HEIGHT);
+        let adapter = block_on(wgpu_instance.request_adapter(&wgpu::RequestAdapterOptions {
+            power_preference: wgpu::PowerPreference::HighPerformance,
+            compatible_surface: Some(&surface),
+        }))
+        .unwrap();
+
+        let (device, queue) = block_on(adapter.request_device(
+            &wgpu::DeviceDescriptor {
+                features: wgpu::Features::default(),
+                limits: wgpu::Limits::default(),
+                label: None,
+            },
+            None,
+        ))
+        .unwrap();
+
+        let (width, height) = window.size();
+        let surface_format = surface.get_preferred_format(&adapter).unwrap();
+        let surface_config = wgpu::SurfaceConfiguration {
+            usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
+            format: surface_format,
+            width,
+            height,
+            present_mode: wgpu::PresentMode::Mailbox,
+        };
+        surface.configure(&device, &surface_config);
+
+        let egui_rpass = RenderPass::new(&device, surface_format, 1);
         let egui_ctx = egui::CtxRef::default();
-
-        debug_assert_eq!(gl_attr.context_profile(), GLProfile::Core);
-        debug_assert_eq!(gl_attr.context_version(), (3, 2));
 
         let native_pixels_per_point = 96f32 / video_subsystem.display_dpi(0).unwrap().0;
 
-        let egui_input_state = egui_backend::EguiInputState::new(egui::RawInput {
+        let egui_input_state = EguiInputState::new(egui::RawInput {
             screen_rect: None,
             pixels_per_point: Some(native_pixels_per_point),
             ..Default::default()
@@ -72,10 +87,13 @@ impl Gui {
         Self {
             egui_input_state,
             egui_ctx,
+            queue,
+            device,
+            surface,
+            config: surface_config,
             native_pixels_per_point,
-            painter,
+            egui_rpass,
             window,
-            _ctx: ctx,
             sens: 1.,
             accel: true,
             min_sens: 1.,
@@ -92,11 +110,23 @@ impl Gui {
         match event {
             // https://github.com/ArjunNair/egui_sdl2_gl/issues/11
             Event::Window { window_id, .. } if window_id != self.window.id() => {}
-            _ => egui_backend::input_to_egui(event, &mut self.egui_input_state),
+            _ => egui_sdl2_gl::input_to_egui(event, &mut self.egui_input_state),
         }
     }
 
     pub fn tick(&mut self, dt: Duration) {
+        let output_frame = match self.surface.get_current_frame() {
+            Ok(frame) => frame,
+            Err(e) => {
+                eprintln!("Dropped frame with error: {}", e);
+                return;
+            }
+        };
+        let output_view = output_frame
+            .output
+            .texture
+            .create_view(&wgpu::TextureViewDescriptor::default());
+
         self.egui_input_state.input.time = Some(dt.as_secs_f64());
         self.egui_ctx
             .begin_frame(self.egui_input_state.input.take());
@@ -105,15 +135,6 @@ impl Gui {
         //so setting it every frame now.
         //TODO: Investigate if this is the right way.
         self.egui_input_state.input.pixels_per_point = Some(self.native_pixels_per_point);
-
-        //An example of how OpenGL can be used to draw custom stuff with egui
-        //overlaying it:
-        //First clear the background to something nice.
-        unsafe {
-            // Clear the screen to black
-            gl::ClearColor(0.3, 0.6, 0.3, 1.0);
-            gl::Clear(gl::COLOR_BUFFER_BIT);
-        }
 
         let ctx = self.egui_ctx.clone();
         egui::CentralPanel::default().show(&ctx, |ui| {
@@ -214,24 +235,50 @@ impl Gui {
 
         let (egui_output, paint_cmds) = self.egui_ctx.end_frame();
 
-        //Handle cut, copy text from egui
         if !egui_output.copied_text.is_empty() {
-            egui_backend::copy_to_clipboard(&mut self.egui_input_state, egui_output.copied_text);
+            egui_sdl2_gl::copy_to_clipboard(&mut self.egui_input_state, egui_output.copied_text);
         }
+        sdl2::mouse::Cursor::from_system(egui_sdl2_gl::translate_cursor(egui_output.cursor_icon))
+            .unwrap()
+            .set();
 
         let paint_jobs = self.egui_ctx.tessellate(paint_cmds);
 
-        //Note: passing a bg_color to paint_jobs will clear any previously drawn stuff.
-        //Use this only if egui is being used for all drawing and you aren't mixing your own Open GL
-        //drawing calls with it.
-        //Since we are custom drawing an OpenGL Triangle we don't need egui to clear the background.
-        self.painter.paint_jobs(
-            None,
-            paint_jobs,
-            &self.egui_ctx.texture(),
-            self.native_pixels_per_point,
+        let mut encoder = self
+            .device
+            .create_command_encoder(&wgpu::CommandEncoderDescriptor {
+                label: Some("encoder"),
+            });
+
+        // Upload all resources for the GPU.
+        let screen_descriptor = ScreenDescriptor {
+            physical_width: self.config.width,
+            physical_height: self.config.height,
+            scale_factor: self.native_pixels_per_point,
+        };
+        self.egui_rpass
+            .update_texture(&self.device, &self.queue, &self.egui_ctx.texture());
+        self.egui_rpass
+            .update_user_textures(&self.device, &self.queue);
+        self.egui_rpass.update_buffers(
+            &mut self.device,
+            &mut self.queue,
+            &paint_jobs,
+            &screen_descriptor,
         );
 
-        self.window.gl_swap_window();
+        // Record all render passes.
+        self.egui_rpass
+            .execute(
+                &mut encoder,
+                &output_view,
+                &paint_jobs,
+                &screen_descriptor,
+                Some(wgpu::Color::BLACK),
+            )
+            .unwrap();
+
+        // Submit the commands.
+        self.queue.submit(std::iter::once(encoder.finish()));
     }
 }

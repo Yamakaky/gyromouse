@@ -42,6 +42,8 @@ pub struct SDLBackend {
     gui: Gui,
     #[cfg(feature = "gui")]
     video_subsystem: VideoSubsystem,
+    #[cfg(feature = "gui")]
+    wgpu_instance: wgpu::Instance,
 }
 
 impl SDLBackend {
@@ -64,7 +66,9 @@ impl SDLBackend {
         #[cfg(feature = "gui")]
         let video_subsystem = sdl.video().expect("can't initialize SDL video");
         #[cfg(feature = "gui")]
-        let gui = Gui::new(&video_subsystem);
+        let wgpu_instance = wgpu::Instance::new(wgpu::Backends::PRIMARY);
+        #[cfg(feature = "gui")]
+        let gui = Gui::new(&video_subsystem, &wgpu_instance);
 
         Ok(Self {
             sdl,
@@ -74,6 +78,8 @@ impl SDLBackend {
             gui,
             #[cfg(feature = "gui")]
             video_subsystem,
+            #[cfg(feature = "gui")]
+            wgpu_instance,
         })
     }
 }
@@ -172,7 +178,7 @@ impl Backend for SDLBackend {
                         };
 
                         #[cfg(feature = "gui")]
-                        let overlay = Overlay::new(&self.video_subsystem)
+                        let overlay = Overlay::new(&self.video_subsystem, &self.wgpu_instance)
                             .context("overlay creation error")?;
 
                         let engine = Engine::new(

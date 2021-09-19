@@ -8,7 +8,7 @@ use sdl2::{
     video::Window,
     VideoSubsystem,
 };
-use wgpu::{util::DeviceExt, Backends};
+use wgpu::{util::DeviceExt};
 
 pub struct Overlay {
     vertex_buffer: wgpu::Buffer,
@@ -24,7 +24,7 @@ pub struct Overlay {
 }
 
 impl Overlay {
-    pub fn new(video_subsystem: &VideoSubsystem) -> Result<Self> {
+    pub fn new(video_subsystem: &VideoSubsystem, wgpu_instance: &wgpu::Instance) -> Result<Self> {
         let window = video_subsystem
             .window("Raw Window Handle Example", 800, 600)
             .position_centered()
@@ -32,13 +32,13 @@ impl Overlay {
             .build()?;
         let (width, height) = window.size();
 
-        let instance = wgpu::Instance::new(Backends::PRIMARY);
-        let surface = unsafe { instance.create_surface(&window) };
-        let adapter = pollster::block_on(instance.request_adapter(&wgpu::RequestAdapterOptions {
-            power_preference: wgpu::PowerPreference::HighPerformance,
-            compatible_surface: Some(&surface),
-        }))
-        .unwrap();
+        let surface = unsafe { wgpu_instance.create_surface(&window) };
+        let adapter =
+            pollster::block_on(wgpu_instance.request_adapter(&wgpu::RequestAdapterOptions {
+                power_preference: wgpu::PowerPreference::HighPerformance,
+                compatible_surface: Some(&surface),
+            }))
+            .unwrap();
 
         let limits = wgpu::Limits {
             max_push_constant_size: 64,

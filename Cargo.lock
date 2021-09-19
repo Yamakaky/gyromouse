@@ -440,6 +440,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "egui_wgpu_backend"
+version = "0.12.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7d44a2a93ed9d03e9b7f8648fd5fc8ba56bb8391af195042fd8c85dd2544e972"
+dependencies = [
+ "bytemuck",
+ "epi",
+ "wgpu",
+]
+
+[[package]]
 name = "emath"
 version = "0.14.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -502,6 +513,15 @@ dependencies = [
  "atomic_refcell",
  "emath",
  "ordered-float",
+]
+
+[[package]]
+name = "epi"
+version = "0.14.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e3c033c9b4d921566a98b8831b63af5ba2a0ad7ffa62d22b897698f36c22a28a"
+dependencies = [
+ "egui",
 ]
 
 [[package]]
@@ -648,6 +668,7 @@ dependencies = [
  "clap",
  "egui",
  "egui_sdl2_gl",
+ "egui_wgpu_backend",
  "enigo",
  "enum-map",
  "env_logger",
