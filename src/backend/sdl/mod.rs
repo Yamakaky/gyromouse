@@ -39,11 +39,11 @@ pub struct SDLBackend {
     game_controller_system: GameControllerSubsystem,
     mouse: Mouse,
     #[cfg(feature = "gui")]
+    wgpu_instance: wgpu::Instance,
+    #[cfg(feature = "gui")]
     gui: Gui,
     #[cfg(feature = "gui")]
     video_subsystem: VideoSubsystem,
-    #[cfg(feature = "gui")]
-    wgpu_instance: wgpu::Instance,
 }
 
 impl SDLBackend {
