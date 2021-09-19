@@ -15,9 +15,7 @@ use crate::{
     mapping::{Buttons, ExtAction},
     motion_stick::MotionStick,
     mouse::{Mouse, MouseMovement},
-    space_mapper::{
-        self, LocalSpace, PlayerSpace, SensorFusion, SimpleFusion, SpaceMapper, WorldSpace,
-    },
+    space_mapper::*,
     ClickType,
 };
 
@@ -250,7 +248,7 @@ impl Gyro {
         let dt = dt / motions.len() as u32;
         for (i, frame) in motions.iter().cloned().enumerate() {
             let frame = self.calibration.calibrate(frame);
-            let delta = space_mapper::map_input(
+            let delta = map_input(
                 &frame,
                 dt,
                 self.sensor_fusion.deref_mut(),

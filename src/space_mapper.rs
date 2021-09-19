@@ -29,6 +29,7 @@ pub struct SimpleFusion {
 }
 
 impl SimpleFusion {
+    #[allow(dead_code)]
     pub fn new() -> Self {
         Self {
             up_vector: vec3(0., 1., 0.),
@@ -45,7 +46,13 @@ impl SensorFusion for SimpleFusion {
         let rotation = Quaternion::from(motion.rotation_speed * dt).invert();
         self.up_vector = rotation.rotate_vector(self.up_vector);
         // TODO: Make the correction rate depend on dt instead of fixed per tick.
-        self.up_vector += (motion.acceleration.as_vec() - self.up_vector) * self.correction_factor;
+        self.up_vector +=
+            (motion.acceleration.as_vec().normalize() - self.up_vector) * self.correction_factor;
+        self.up_vector = if self.up_vector.magnitude2() > 0. {
+            self.up_vector.normalize()
+        } else {
+            Vector3::zero()
+        };
         self.up_vector
     }
 }

@@ -2,7 +2,7 @@ use std::{borrow::Cow, convert::TryInto, mem};
 
 use anyhow::Result;
 use bytemuck::{Pod, Zeroable};
-use cgmath::{vec3, Deg, Euler, InnerSpace, Matrix4, Quaternion, Rad, Rotation3, Vector2, Vector3};
+use cgmath::{vec3, Deg, Euler, InnerSpace, Matrix4, Quaternion, Rotation3, Vector3};
 use sdl2::{
     event::{Event, WindowEvent},
     video::Window,
