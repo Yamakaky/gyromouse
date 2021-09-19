@@ -2,25 +2,26 @@ use std::{borrow::Cow, convert::TryInto, mem};
 
 use anyhow::Result;
 use bytemuck::{Pod, Zeroable};
-use cgmath::{vec3, Matrix4, Quaternion};
+use cgmath::{vec3, Deg, Euler, InnerSpace, Matrix4, Quaternion, Rad, Rotation3, Vector2, Vector3};
 use sdl2::{
     event::{Event, WindowEvent},
     video::Window,
     VideoSubsystem,
 };
-use wgpu::{util::DeviceExt};
+use wgpu::util::DeviceExt;
 
 pub struct Overlay {
+    window: Window,
+    surface: wgpu::Surface,
+    device: wgpu::Device,
+    queue: wgpu::Queue,
     vertex_buffer: wgpu::Buffer,
     index_buffer: wgpu::Buffer,
     index_count: usize,
     bind_group: wgpu::BindGroup,
     pipeline: wgpu::RenderPipeline,
-    device: wgpu::Device,
-    queue: wgpu::Queue,
-    surface: wgpu::Surface,
-    window: Window,
     config: wgpu::SurfaceConfiguration,
+    world_yaw: Deg<f64>,
 }
 
 impl Overlay {
@@ -221,6 +222,7 @@ impl Overlay {
             queue,
             window,
             config,
+            world_yaw: Deg(0.),
         })
     }
 
@@ -239,7 +241,14 @@ impl Overlay {
         }
     }
 
-    pub fn tick(&self, up_vector: cgmath::Vector3<f64>) -> Result<()> {
+    pub fn tick(
+        &mut self,
+        delta_rotation: Euler<Deg<f64>>,
+        up_vector: cgmath::Vector3<f64>,
+    ) -> Result<()> {
+        self.world_yaw +=
+            Deg(vec3(delta_rotation.x.0, delta_rotation.y.0, delta_rotation.z.0).dot(up_vector));
+
         let frame = self.surface.get_current_frame()?;
         let view = &frame
             .output
@@ -274,9 +283,12 @@ impl Overlay {
             rpass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
             rpass.pop_debug_group();
             rpass.insert_debug_marker("Draw!");
-            let rot = Matrix4::from(Quaternion::from_arc(up_vector, vec3(0., 1., 0.), None))
-                .cast::<f32>()
-                .unwrap();
+            let rot = Matrix4::from(
+                Quaternion::from_angle_y(self.world_yaw)
+                    * Quaternion::from_arc(Vector3::unit_y(), up_vector, None),
+            )
+            .cast::<f32>()
+            .unwrap();
             let rot_raw: [u8; 4 * 16] = unsafe { std::mem::transmute(rot) };
             rpass.set_push_constants(wgpu::ShaderStages::VERTEX, 0, &rot_raw);
             rpass.draw_indexed(0..self.index_count as u32, 0, 0..1);
@@ -369,8 +381,8 @@ fn create_texels(size: usize) -> Vec<u8> {
 fn generate_matrix(aspect_ratio: f32) -> cgmath::Matrix4<f32> {
     let mx_projection = cgmath::perspective(cgmath::Deg(45f32), aspect_ratio, 1.0, 10.0);
     let mx_view = cgmath::Matrix4::look_at_rh(
-        cgmath::Point3::new(1.5f32, -5.0, 3.0),
-        cgmath::Point3::new(0f32, 0.0, 0.0),
+        cgmath::Point3::new(0., 5., 0.),
+        cgmath::Point3::new(0., 0., 0.),
         cgmath::Vector3::unit_z(),
     );
     let mx_correction = OPENGL_TO_WGPU_MATRIX;

@@ -299,7 +299,9 @@ impl Backend for SDLBackend {
                 engine.apply_actions(now)?;
 
                 #[cfg(feature = "gui")]
-                controller.overlay.tick(engine.up_vector())?;
+                controller
+                    .overlay
+                    .tick(engine.rotation_speed() * dt, engine.up_vector())?;
             }
 
             #[cfg(feature = "gui")]

@@ -194,6 +194,10 @@ impl Engine {
     pub fn up_vector(&self) -> Vector3<f64> {
         self.gyro.sensor_fusion.up_vector()
     }
+
+    pub fn rotation_speed(&self) -> RotationSpeed {
+        self.gyro.last_calibrated_frame.rotation_speed
+    }
 }
 
 pub struct Gyro {
@@ -202,6 +206,7 @@ pub struct Gyro {
     sensor_fusion: Box<dyn SensorFusion>,
     space_mapper: Box<dyn SpaceMapper>,
     gyromouse: GyroMouse,
+    last_calibrated_frame: Motion,
 }
 
 impl Gyro {
@@ -218,6 +223,18 @@ impl Gyro {
                 GyroSpace::PlayerLean => todo!("Player Lean is unimplemented for now"),
             },
             gyromouse: GyroMouse::default(),
+            last_calibrated_frame: Motion {
+                rotation_speed: RotationSpeed {
+                    x: 0.,
+                    y: 0.,
+                    z: 0.,
+                },
+                acceleration: Acceleration {
+                    x: 0.,
+                    y: 0.,
+                    z: 0.,
+                },
+            },
         }
     }
 
@@ -247,6 +264,7 @@ impl Gyro {
                 }
                 mouse.mouse_move_relative(&settings.mouse, offset);
             }
+            self.last_calibrated_frame = frame;
         }
         if self.enabled && SMOOTH_RATE {
             mouse.mouse_move_relative(&settings.mouse, delta_position);
