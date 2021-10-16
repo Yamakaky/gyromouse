@@ -2,7 +2,7 @@ use std::{borrow::Cow, convert::TryInto, mem};
 
 use anyhow::Result;
 use bytemuck::{Pod, Zeroable};
-use cgmath::{Deg, Euler, InnerSpace, Matrix4, One, Quaternion, Rotation3};
+use cgmath::{Deg, Euler, InnerSpace, Matrix4, One, Quaternion, Rotation, Rotation3, Vector3};
 use sdl2::{
     event::{Event, WindowEvent},
     video::Window,
@@ -244,11 +244,18 @@ impl Overlay {
     pub fn tick(
         &mut self,
         delta_rotation: Euler<Deg<f64>>,
-        _up_vector: cgmath::Vector3<f64>,
+        up_vector: cgmath::Vector3<f64>,
     ) -> Result<()> {
-        self.rotation = (self.rotation * Quaternion::from(delta_rotation)).normalize();
-        let raw_rot = Euler::from(self.rotation);
-        self.rotation = Quaternion::from_angle_y(-raw_rot.y * 0.0001) * self.rotation;
+        if delta_rotation != Euler::new(Deg(0.), Deg(0.), Deg(0.)) {
+            self.rotation = (self.rotation * Quaternion::from(delta_rotation)).normalize();
+            let raw_rot = Euler::from(self.rotation);
+            let computed_up = self.rotation.invert().rotate_vector(Vector3::unit_y());
+            self.rotation = self.rotation
+                * Quaternion::one()
+                    .slerp(Quaternion::between_vectors(computed_up, up_vector), 0.01)
+                    .invert()
+                * Quaternion::from_angle_y(-raw_rot.y * 0.0005);
+        }
 
         let frame = self.surface.get_current_frame()?;
         let view = &frame
