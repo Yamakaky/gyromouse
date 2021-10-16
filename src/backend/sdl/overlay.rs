@@ -1,6 +1,6 @@
 use std::{borrow::Cow, convert::TryInto, mem};
 
-use anyhow::Result;
+use anyhow::{Error, Result};
 use bytemuck::{Pod, Zeroable};
 use cgmath::{Deg, Euler, InnerSpace, Matrix4, One, Quaternion, Rotation, Rotation3, Vector3};
 use sdl2::{
@@ -9,6 +9,8 @@ use sdl2::{
     VideoSubsystem,
 };
 use wgpu::util::DeviceExt;
+
+const SAMPLE_COUNT: u32 = 4;
 
 pub struct Overlay {
     window: Window,
@@ -19,6 +21,7 @@ pub struct Overlay {
     index_buffer: wgpu::Buffer,
     index_count: usize,
     bind_group: wgpu::BindGroup,
+    multisampled_framebuffer: wgpu::TextureView,
     pipeline: wgpu::RenderPipeline,
     config: wgpu::SurfaceConfiguration,
     rotation: Quaternion<f64>,
@@ -26,12 +29,14 @@ pub struct Overlay {
 
 impl Overlay {
     pub fn new(video_subsystem: &VideoSubsystem, wgpu_instance: &wgpu::Instance) -> Result<Self> {
-        let window = video_subsystem
+        let mut window = video_subsystem
             .window("Raw Window Handle Example", 800, 600)
             .position_centered()
             .resizable()
             .build()?;
         let (width, height) = window.size();
+
+        window.set_opacity(0.5).map_err(|s| Error::msg(s))?;
 
         let surface = unsafe { wgpu_instance.create_surface(&window) };
         let adapter =
@@ -208,8 +213,13 @@ impl Overlay {
                 ..Default::default()
             },
             depth_stencil: None,
-            multisample: wgpu::MultisampleState::default(),
+            multisample: wgpu::MultisampleState {
+                count: SAMPLE_COUNT,
+                ..Default::default()
+            },
         });
+
+        let multisampled_framebuffer = Self::create_multisampled_framebuffer(&device, &config);
 
         Ok(Self {
             vertex_buffer,
@@ -222,8 +232,33 @@ impl Overlay {
             queue,
             window,
             config,
+            multisampled_framebuffer,
             rotation: Quaternion::one(),
         })
+    }
+
+    fn create_multisampled_framebuffer(
+        device: &wgpu::Device,
+        config: &wgpu::SurfaceConfiguration,
+    ) -> wgpu::TextureView {
+        let multisampled_texture_extent = wgpu::Extent3d {
+            width: config.width,
+            height: config.height,
+            depth_or_array_layers: 1,
+        };
+        let multisampled_frame_descriptor = &wgpu::TextureDescriptor {
+            size: multisampled_texture_extent,
+            mip_level_count: 1,
+            sample_count: SAMPLE_COUNT,
+            dimension: wgpu::TextureDimension::D2,
+            format: config.format,
+            usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
+            label: None,
+        };
+
+        device
+            .create_texture(multisampled_frame_descriptor)
+            .create_view(&wgpu::TextureViewDescriptor::default())
     }
 
     pub fn event(&mut self, event: &Event) {
@@ -236,6 +271,8 @@ impl Overlay {
                 self.config.width = (*width).try_into().unwrap();
                 self.config.height = (*height).try_into().unwrap();
                 self.surface.configure(&self.device, &self.config);
+                self.multisampled_framebuffer =
+                    Self::create_multisampled_framebuffer(&self.device, &self.config)
             }
             _ => {}
         }
@@ -270,8 +307,8 @@ impl Overlay {
             let mut rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: None,
                 color_attachments: &[wgpu::RenderPassColorAttachment {
-                    view,
-                    resolve_target: None,
+                    view: &self.multisampled_framebuffer,
+                    resolve_target: Some(view),
                     ops: wgpu::Operations {
                         load: wgpu::LoadOp::Clear(wgpu::Color {
                             r: 0.1,
