@@ -2,7 +2,7 @@ use std::{borrow::Cow, convert::TryInto, mem};
 
 use anyhow::Result;
 use bytemuck::{Pod, Zeroable};
-use cgmath::{vec3, Deg, Euler, InnerSpace, Matrix4, Quaternion, Rotation3, Vector3};
+use cgmath::{Deg, Euler, InnerSpace, Matrix4, One, Quaternion, Rotation3};
 use sdl2::{
     event::{Event, WindowEvent},
     video::Window,
@@ -21,7 +21,7 @@ pub struct Overlay {
     bind_group: wgpu::BindGroup,
     pipeline: wgpu::RenderPipeline,
     config: wgpu::SurfaceConfiguration,
-    world_yaw: Deg<f64>,
+    rotation: Quaternion<f64>,
 }
 
 impl Overlay {
@@ -222,7 +222,7 @@ impl Overlay {
             queue,
             window,
             config,
-            world_yaw: Deg(0.),
+            rotation: Quaternion::one(),
         })
     }
 
@@ -244,10 +244,11 @@ impl Overlay {
     pub fn tick(
         &mut self,
         delta_rotation: Euler<Deg<f64>>,
-        up_vector: cgmath::Vector3<f64>,
+        _up_vector: cgmath::Vector3<f64>,
     ) -> Result<()> {
-        self.world_yaw +=
-            Deg(vec3(delta_rotation.x.0, delta_rotation.y.0, delta_rotation.z.0).dot(up_vector));
+        self.rotation = (self.rotation * Quaternion::from(delta_rotation)).normalize();
+        let raw_rot = Euler::from(self.rotation);
+        self.rotation = Quaternion::from_angle_y(-raw_rot.y * 0.0001) * self.rotation;
 
         let frame = self.surface.get_current_frame()?;
         let view = &frame
@@ -283,13 +284,9 @@ impl Overlay {
             rpass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
             rpass.pop_debug_group();
             rpass.insert_debug_marker("Draw!");
-            let rot = Matrix4::from(
-                Quaternion::from_angle_y(self.world_yaw)
-                    * Quaternion::from_arc(Vector3::unit_y(), up_vector, None),
-            )
-            .cast::<f32>()
-            .unwrap();
-            let rot_raw: [u8; 4 * 16] = unsafe { std::mem::transmute(rot) };
+            let rot_raw: [u8; 4 * 16] =
+                unsafe { std::mem::transmute(Matrix4::from(self.rotation.cast::<f32>().unwrap())) };
+
             rpass.set_push_constants(wgpu::ShaderStages::VERTEX, 0, &rot_raw);
             rpass.draw_indexed(0..self.index_count as u32, 0, 0..1);
         }
@@ -383,7 +380,7 @@ fn generate_matrix(aspect_ratio: f32) -> cgmath::Matrix4<f32> {
     let mx_view = cgmath::Matrix4::look_at_rh(
         cgmath::Point3::new(0., 5., 0.),
         cgmath::Point3::new(0., 0., 0.),
-        cgmath::Vector3::unit_z(),
+        -cgmath::Vector3::unit_z(),
     );
     let mx_correction = OPENGL_TO_WGPU_MATRIX;
     mx_correction * mx_projection * mx_view
