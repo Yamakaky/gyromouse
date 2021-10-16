@@ -1,6 +1,8 @@
-use std::{f64::consts::PI, time::Duration};
+use std::time::Duration;
 
-use cgmath::{vec2, vec3, InnerSpace, Quaternion, Rotation, Vector2, Vector3, VectorSpace, Zero};
+use cgmath::{
+    vec2, vec3, Deg, InnerSpace, Quaternion, Rad, Rotation, Vector2, Vector3, VectorSpace, Zero,
+};
 use hid_gamepad_types::{Motion, RotationSpeed};
 
 pub fn map_input(
@@ -84,6 +86,14 @@ impl SensorFusion for AdaptativeFusion {
     // TODO: check http://gyrowiki.jibbsmart.com/blog:finding-gravity-with-sensor-fusion
     // TODO: check normalize() with magnitude 0.
     fn compute_up_vector(&mut self, motion: &Motion, dt: Duration) -> Vector3<f64> {
+        let rot = motion.rotation_speed * dt;
+        let acc = motion.acceleration;
+
+        if self.smooth_accel.is_zero() && self.up_vector.is_zero() {
+            self.smooth_accel = acc.as_vec();
+            self.up_vector = acc.as_vec();
+        }
+
         // settings
         let smoothing_half_time = 0.25;
         let shakiness_min_threshold = 0.4;
@@ -95,25 +105,23 @@ impl SensorFusion for AdaptativeFusion {
         let correction_gyro_max_threshold = 0.25;
         let correction_min_speed = 0.01;
 
-        let rot = motion.rotation_speed * dt;
-        let rot_vec = vec3(rot.x.0, rot.y.0, rot.z.0);
-        let acc = motion.acceleration;
-
-        let invert_rotation = Quaternion::from(motion.rotation_speed * dt).invert();
+        let invert_rotation = Quaternion::from(rot).invert();
 
         self.up_vector = invert_rotation.rotate_vector(self.up_vector);
         self.smooth_accel = invert_rotation.rotate_vector(self.smooth_accel);
         let smooth_interpolator = if smoothing_half_time <= 0. {
             0.
         } else {
-            -dt.as_secs_f64() / smoothing_half_time
+            (-dt.as_secs_f64() / smoothing_half_time).exp2()
         };
         self.shakiness = (self.shakiness * smooth_interpolator)
             .max((acc.as_vec() - self.smooth_accel).magnitude());
-        self.smooth_accel = acc.as_vec().lerp(self.smooth_accel, smooth_interpolator);
+        self.smooth_accel = self
+            .smooth_accel
+            .lerp(acc.as_vec(), 1. - smooth_interpolator);
 
-        let up_delta = acc.as_vec() - self.up_vector;
-        let up_direction = up_delta.normalize();
+        let delta_up_minusgrav = acc.as_vec().normalize() - self.up_vector;
+        let delta_up_minusgrav_dir = delta_up_minusgrav.normalize();
         let shake_factor = normalize(
             self.shakiness,
             shakiness_min_threshold,
@@ -121,11 +129,11 @@ impl SensorFusion for AdaptativeFusion {
         );
         let mut correction_rate = still_rate + (shaky_rate - still_rate) * shake_factor;
 
-        let angle_rate = rot_vec.magnitude() * PI / 180.;
+        let angle_rate = Rad::from(Deg(motion.rotation_speed.as_vec().magnitude())).0;
         let correction_limit = angle_rate * self.up_vector.magnitude() * correction_gyro_factor;
         if correction_rate > correction_limit {
             let close_enough_factor = normalize(
-                up_delta.magnitude(),
+                delta_up_minusgrav.magnitude(),
                 correction_gyro_min_threshold,
                 correction_gyro_max_threshold,
             );
@@ -134,12 +142,13 @@ impl SensorFusion for AdaptativeFusion {
 
         correction_rate = correction_rate.max(correction_min_speed);
 
-        let correction = up_direction.normalize_to(correction_rate * dt.as_secs_f64());
-        self.up_vector += if correction.magnitude2() < up_delta.magnitude2() {
+        let correction = delta_up_minusgrav_dir.normalize_to(correction_rate * dt.as_secs_f64());
+        self.up_vector += if correction.magnitude2() < delta_up_minusgrav.magnitude2() {
             correction
         } else {
-            up_delta
+            delta_up_minusgrav
         };
+        self.up_vector = self.up_vector.normalize();
         self.up_vector
     }
 }

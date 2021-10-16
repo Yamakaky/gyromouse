@@ -212,7 +212,7 @@ impl Gyro {
         Gyro {
             enabled: true,
             calibration,
-            sensor_fusion: Box::new(SimpleFusion::new()),
+            sensor_fusion: Box::new(AdaptativeFusion::new()),
             space_mapper: match settings.gyro.space {
                 GyroSpace::Local => Box::new(LocalSpace::default()),
                 GyroSpace::WorldTurn => Box::new(WorldSpace::default()),
