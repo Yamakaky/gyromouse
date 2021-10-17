@@ -1,9 +1,10 @@
-use std::{borrow::Cow, convert::TryInto, mem};
+use std::{borrow::Cow, convert::TryInto, mem, time::Duration};
 
 use anyhow::{Error, Result};
 use bytemuck::{Pod, Zeroable};
 use cgmath::{Deg, Euler, InnerSpace, Matrix4, One, Quaternion, Rotation, Rotation3, Vector3};
 use sdl2::{
+    controller::GameController,
     event::{Event, WindowEvent},
     video::Window,
     VideoSubsystem,
@@ -282,6 +283,8 @@ impl Overlay {
         &mut self,
         delta_rotation: Euler<Deg<f64>>,
         up_vector: cgmath::Vector3<f64>,
+        _dt: Duration,
+        _controller: &GameController,
     ) -> Result<()> {
         if delta_rotation != Euler::new(Deg(0.), Deg(0.), Deg(0.)) {
             self.rotation = (self.rotation * Quaternion::from(delta_rotation)).normalize();
