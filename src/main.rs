@@ -16,7 +16,7 @@ use std::{fs::File, io::Read};
 
 use anyhow::{bail, Context};
 use backend::Backend;
-use clap::Clap;
+use clap::Parser;
 use nom_supreme::{
     error::{BaseErrorKind, ErrorTree},
     final_parser::{ExtractContext, Location},

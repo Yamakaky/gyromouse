@@ -26,7 +26,7 @@ struct Uniforms {
     transform: mat4x4<f32>;
 };
 [[group(1), binding(0)]]
-var r_locals: Uniforms;
+var<uniform> r_locals: Uniforms;
 
 [[stage(vertex)]]
 fn vs_main(model: VertexInput) -> VertexOutput {

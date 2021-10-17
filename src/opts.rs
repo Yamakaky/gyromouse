@@ -1,14 +1,13 @@
 use std::{path::PathBuf, str::FromStr};
 
-use clap::Clap;
+use clap::Parser;
 
 /// Input mapper from gamepad keypress and movement to mouse and keyboard.
 ///
 /// See <https://github.com/Yamakaky/gyromouse/blob/master/README.md> for more
 /// information about features and configuration file format.
-#[derive(Debug, Clap)]
+#[derive(Debug, Parser)]
 #[clap(version = clap::crate_version!())]
-#[clap(setting = clap::AppSettings::ColoredHelp)]
 pub struct Opts {
     /// Force the use of a specific backend for gamepad access.
     #[clap(short, long)]
@@ -19,8 +18,7 @@ pub struct Opts {
     pub cmd: Option<Cmd>,
 }
 
-#[derive(Debug, Clap)]
-#[clap(setting = clap::AppSettings::ColoredHelp)]
+#[derive(Debug, Parser)]
 pub enum Backend {
     #[cfg(feature = "sdl2")]
     Sdl,
@@ -28,8 +26,7 @@ pub enum Backend {
     Hid,
 }
 
-#[derive(Debug, Clap)]
-#[clap(setting = clap::AppSettings::ColoredHelp)]
+#[derive(Debug, Parser)]
 pub enum Cmd {
     /// Validate the syntax of a configuration file.
     Validate(Run),
@@ -42,8 +39,7 @@ pub enum Cmd {
     List,
 }
 
-#[derive(Debug, Clap)]
-#[clap(setting = clap::AppSettings::ColoredHelp)]
+#[derive(Debug, Parser)]
 pub struct Run {
     /// Configuration file to use.
     pub mapping_file: PathBuf,

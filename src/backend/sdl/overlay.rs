@@ -49,6 +49,7 @@ impl Overlay {
             pollster::block_on(wgpu_instance.request_adapter(&wgpu::RequestAdapterOptions {
                 power_preference: wgpu::PowerPreference::HighPerformance,
                 compatible_surface: Some(&surface),
+                force_fallback_adapter: false,
             }))
             .unwrap();
 
@@ -275,9 +276,8 @@ impl Overlay {
                 * Quaternion::from_angle_y(-raw_rot.y * 0.0005);
         }
 
-        let frame = self.surface.get_current_frame()?;
+        let frame = self.surface.get_current_texture()?;
         let view = &frame
-            .output
             .texture
             .create_view(&wgpu::TextureViewDescriptor::default());
 
@@ -319,6 +319,8 @@ impl Overlay {
         }
 
         self.queue.submit(Some(encoder.finish()));
+
+        frame.present();
 
         Ok(())
     }

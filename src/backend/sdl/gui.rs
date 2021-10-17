@@ -49,6 +49,7 @@ impl Gui {
         let adapter = block_on(wgpu_instance.request_adapter(&wgpu::RequestAdapterOptions {
             power_preference: wgpu::PowerPreference::HighPerformance,
             compatible_surface: Some(&surface),
+            force_fallback_adapter: false,
         }))
         .unwrap();
 
@@ -118,7 +119,7 @@ impl Gui {
     }
 
     pub fn tick(&mut self, dt: Duration) {
-        let output_frame = match self.surface.get_current_frame() {
+        let output_frame = match self.surface.get_current_texture() {
             Ok(frame) => frame,
             Err(e) => {
                 eprintln!("Dropped frame with error: {}", e);
@@ -126,7 +127,6 @@ impl Gui {
             }
         };
         let output_view = output_frame
-            .output
             .texture
             .create_view(&wgpu::TextureViewDescriptor::default());
 
@@ -283,5 +283,7 @@ impl Gui {
 
         // Submit the commands.
         self.queue.submit(std::iter::once(encoder.finish()));
+
+        output_frame.present();
     }
 }

@@ -18,9 +18,9 @@ gui = ["sdl2", "egui", "egui_sdl2_gl", "egui_wgpu_backend", "wgpu", "pollster", 
 lto = true
 
 [dependencies]
-anyhow = { version = "1.0", features = ["backtrace"] }
-cgmath = "0.18"
-clap = "3.0.0-beta.2"
+anyhow = { version = "1.0.44", features = ["backtrace"] }
+cgmath = "0.18.0"
+clap = "3.0.0-beta.5"
 enigo = { git = "https://github.com/Yamakaky/enigo", branch = "xdo-sys" }
 # see https://gitlab.com/KonradBorowski/enum-map/-/issues/20
 enum-map = "0.6"
@@ -31,14 +31,14 @@ nom = "7.0.0"
 nom-supreme = "0.6.0"
 human-panic = "1.0.3"
 virtual-gamepad = { git = "https://github.com/Yamakaky/virtual-gamepad", optional = true }
-egui = { version = "0.14.0", optional = true }
+egui = { version = "0.14.2", optional = true }
 egui_sdl2_gl = { git = "https://github.com/Yamakaky/egui_sdl2_gl", branch = "yama-sdl", optional = true, default-features = false }
-wgpu = { version = "0.10.1", optional = true }
+wgpu = { version = "0.11.0", optional = true }
 bytemuck = { version = "1.7.2", optional = true, features = ["derive"] }
 env_logger = "0.9.0"
 pollster = { version = "0.2.4", optional = true }
-egui_wgpu_backend = { version = "0.12.0", optional = true }
-image = { version = "0.23.14", optional = true }
+egui_wgpu_backend = { version = "0.13.0", optional = true }
+image = { version = "0.23.14", optional = true, default-features = false, features = ["jpeg"] }
 tobj = { version = "3.2.0", optional = true }
 
 [dependencies.sdl2]
