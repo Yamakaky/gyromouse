@@ -10,13 +10,17 @@ use sdl2::{
 };
 use wgpu::util::DeviceExt;
 
-use crate::backend::sdl::model::{self, ModelVertex, Vertex};
+use crate::backend::sdl::{
+    model::{self, ModelVertex, Vertex},
+    texture,
+};
 
 use super::model::DrawModel;
 
 const SAMPLE_COUNT: u32 = 4;
 
 pub struct Overlay {
+    depth_texture: texture::Texture,
     uniform_bind_group: wgpu::BindGroup,
     model: model::Model,
     window: Window,
@@ -165,7 +169,13 @@ impl Overlay {
                 cull_mode: Some(wgpu::Face::Back),
                 ..Default::default()
             },
-            depth_stencil: None,
+            depth_stencil: Some(wgpu::DepthStencilState {
+                format: texture::Texture::DEPTH_FORMAT,
+                depth_write_enabled: true,
+                depth_compare: wgpu::CompareFunction::Less,
+                stencil: wgpu::StencilState::default(),
+                bias: wgpu::DepthBiasState::default(),
+            }),
             multisample: wgpu::MultisampleState {
                 count: SAMPLE_COUNT,
                 ..Default::default()
@@ -182,7 +192,11 @@ impl Overlay {
             res_dir.join("controller.obj"),
         )?;
 
+        let depth_texture =
+            texture::Texture::create_depth_texture(&device, &config, SAMPLE_COUNT, "depth texture");
+
         Ok(Self {
+            depth_texture,
             uniform_bind_group,
             model,
             pipeline,
@@ -231,7 +245,13 @@ impl Overlay {
                 self.config.height = (*height).try_into().unwrap();
                 self.surface.configure(&self.device, &self.config);
                 self.multisampled_framebuffer =
-                    Self::create_multisampled_framebuffer(&self.device, &self.config)
+                    Self::create_multisampled_framebuffer(&self.device, &self.config);
+                self.depth_texture = texture::Texture::create_depth_texture(
+                    &self.device,
+                    &self.config,
+                    SAMPLE_COUNT,
+                    "depth texture",
+                );
             }
             _ => {}
         }
@@ -280,7 +300,14 @@ impl Overlay {
                         store: true,
                     },
                 }],
-                depth_stencil_attachment: None,
+                depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
+                    view: &self.depth_texture.view,
+                    depth_ops: Some(wgpu::Operations {
+                        load: wgpu::LoadOp::Clear(1.0),
+                        store: true,
+                    }),
+                    stencil_ops: None,
+                }),
             });
             rpass.push_debug_group("Prepare data for draw.");
             rpass.set_pipeline(&self.pipeline);
