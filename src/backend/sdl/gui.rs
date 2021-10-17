@@ -107,10 +107,13 @@ impl Gui {
     }
 
     pub fn event(&mut self, event: Event) {
-        match event {
-            // https://github.com/ArjunNair/egui_sdl2_gl/issues/11
-            Event::Window { window_id, .. } if window_id != self.window.id() => {}
-            _ => egui_sdl2_gl::input_to_egui(event, &mut self.egui_input_state),
+        // https://github.com/ArjunNair/egui_sdl2_gl/issues/11
+        if event
+            .get_window_id()
+            .map(|id| id == self.window.id())
+            .unwrap_or(false)
+        {
+            egui_sdl2_gl::input_to_egui(event, &mut self.egui_input_state);
         }
     }
 
