@@ -1,7 +1,11 @@
 #[cfg(feature = "gui")]
 mod gui;
 #[cfg(feature = "gui")]
+mod model;
+#[cfg(feature = "gui")]
 mod overlay;
+#[cfg(feature = "gui")]
+mod texture;
 
 use std::{
     collections::HashMap,

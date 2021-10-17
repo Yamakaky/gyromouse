@@ -12,7 +12,7 @@ default = ["sdl2", "vgamepad", "gui"]
 hidapi = ["hid-gamepad", "joycon"]
 sdl2-static = ["sdl2", "sdl2/static-link", "sdl2/use-vcpkg"]
 vgamepad = ["virtual-gamepad"]
-gui = ["sdl2", "egui", "egui_sdl2_gl", "egui_wgpu_backend", "wgpu", "pollster", "bytemuck"]
+gui = ["sdl2", "egui", "egui_sdl2_gl", "egui_wgpu_backend", "wgpu", "pollster", "bytemuck", "image", "tobj"]
 
 [profile.release]
 lto = true
@@ -38,6 +38,8 @@ bytemuck = { version = "1.7.2", optional = true, features = ["derive"] }
 env_logger = "0.9.0"
 pollster = { version = "0.2.4", optional = true }
 egui_wgpu_backend = { version = "0.12.0", optional = true }
+image = { version = "0.23.14", optional = true }
+tobj = { version = "3.2.0", optional = true }
 
 [dependencies.sdl2]
 git = "https://github.com/Yamakaky/rust-sdl2"

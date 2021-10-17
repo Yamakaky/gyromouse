@@ -1,2 +1,6 @@
 /target
-mappings/scratchpad
+/mappings/scratchpad
+/models/*.blend1
+/models/*.obj
+/models/*.mtl
+/models/*.jpg

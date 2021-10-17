@@ -1,7 +1,19 @@
+struct VertexInput {
+    [[location(0)]] position: vec3<f32>;
+    [[location(1)]] tex_coords: vec2<f32>;
+};
+struct InstanceInput {
+    [[location(5)]] model_matrix_0: vec4<f32>;
+    [[location(6)]] model_matrix_1: vec4<f32>;
+    [[location(7)]] model_matrix_2: vec4<f32>;
+    [[location(8)]] model_matrix_3: vec4<f32>;
+};
+
 struct VertexOutput {
-    [[location(0)]] tex_coord: vec2<f32>;
+    [[location(0)]] tex_coords: vec2<f32>;
     [[builtin(position)]] position: vec4<f32>;
 };
+
 
 [[block]]
 struct PushConstants {
@@ -10,29 +22,26 @@ struct PushConstants {
 var<push_constant> push: PushConstants;
 
 [[block]]
-struct Locals {
+struct Uniforms {
     transform: mat4x4<f32>;
 };
-[[group(0), binding(0)]]
-var r_locals: Locals;
+[[group(1), binding(0)]]
+var r_locals: Uniforms;
 
 [[stage(vertex)]]
-fn vs_main(
-    [[location(0)]] position: vec4<f32>,
-    [[location(1)]] tex_coord: vec2<f32>,
-) -> VertexOutput {
+fn vs_main(model: VertexInput) -> VertexOutput {
     var out: VertexOutput;
-    out.tex_coord = tex_coord;
-    out.position = r_locals.transform * push.rot * position;
+    out.tex_coords = model.tex_coords;
+    out.position = r_locals.transform * push.rot * vec4<f32>(model.position, 1.0);
     return out;
 }
 
+[[group(0), binding(0)]]
+var t_diffuse: texture_2d<f32>;
 [[group(0), binding(1)]]
-var r_color: texture_2d<u32>;
+var s_diffuse: sampler;
 
 [[stage(fragment)]]
 fn fs_main(in: VertexOutput) -> [[location(0)]] vec4<f32> {
-    let tex = textureLoad(r_color, vec2<i32>(in.tex_coord * 256.0), 0);
-    let v = f32(tex.x) / 255.0;
-    return vec4<f32>(1.0 - (v * 5.0), 1.0 - (v * 15.0), 1.0 - (v * 50.0), 1.0);
+    return textureSample(t_diffuse, s_diffuse, in.tex_coords);
 }
