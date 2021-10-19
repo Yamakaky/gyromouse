@@ -1,10 +1,12 @@
 use std::{borrow::Cow, path::Path};
 
 use anyhow::Result;
-use cgmath::{Matrix4, SquareMatrix};
-use wgpu::{VertexAttribute, VertexBufferLayout};
+use cgmath::Matrix4;
 
-use crate::backend::sdl::texture;
+use crate::backend::sdl::{
+    model::{ModelVertex, Vertex},
+    texture,
+};
 
 use super::{material::Materials, model::Model};
 
@@ -58,26 +60,7 @@ impl Scene {
             vertex: wgpu::VertexState {
                 module: &shader,
                 entry_point: "vs_main",
-                buffers: &[
-                    VertexBufferLayout {
-                        array_stride: 4 * 3,
-                        step_mode: wgpu::VertexStepMode::Vertex,
-                        attributes: &[VertexAttribute {
-                            format: wgpu::VertexFormat::Float32x3,
-                            offset: 0,
-                            shader_location: 0,
-                        }],
-                    },
-                    VertexBufferLayout {
-                        array_stride: 4 * 2,
-                        step_mode: wgpu::VertexStepMode::Vertex,
-                        attributes: &[VertexAttribute {
-                            format: wgpu::VertexFormat::Float32x2,
-                            offset: 0,
-                            shader_location: 1,
-                        }],
-                    },
-                ],
+                buffers: &[ModelVertex::desc()],
             },
             fragment: Some(wgpu::FragmentState {
                 module: &shader,
@@ -109,11 +92,12 @@ impl Scene {
         })
     }
 
-    pub fn draw<'a>(&'a self, pass: &mut wgpu::RenderPass<'a>) {
+    pub fn draw<'a>(&'a self, pass: &mut wgpu::RenderPass<'a>, transform: impl Into<Matrix4<f32>>) {
+        let transform = transform.into();
         pass.push_debug_group("Scene render");
         pass.set_pipeline(&self.pipeline);
         for model in &self.models {
-            model.draw(pass, &self.view_projection, &Matrix4::identity());
+            model.draw(pass, &self.view_projection, &transform);
         }
         pass.pop_debug_group();
     }

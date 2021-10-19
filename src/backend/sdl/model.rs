@@ -14,7 +14,7 @@ pub trait Vertex {
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
 pub struct ModelVertex {
     position: [f32; 3],
-    tex_coords: [f32; 2],
+    uv: [f32; 2],
     normal: [f32; 3],
 }
 
@@ -46,8 +46,7 @@ impl Vertex for ModelVertex {
 }
 
 pub struct Primitive {
-    positions_buffer: wgpu::Buffer,
-    uv_buffer: wgpu::Buffer,
+    vertices_buffer: wgpu::Buffer,
     indices_buffer: wgpu::Buffer,
     num_elements: u32,
     material: Arc<Material>,
@@ -65,29 +64,25 @@ impl Primitive {
         assert_eq!(primitive.mode(), gltf::mesh::Mode::Triangles);
         let reader = primitive.reader(|buffer| Some(&buffers[buffer.index()]));
 
-        let positions: Vec<_> = reader
+        let vertices: Vec<_> = reader
             .read_positions()
             .expect("missing positions")
+            .zip(reader.read_tex_coords(0).expect("missing uv").into_f32())
+            .zip(reader.read_normals().expect("missing normals"))
+            .map(|((position, uv), normal)| ModelVertex {
+                position,
+                uv,
+                normal,
+            })
             .collect();
         let positions_label =
-            mesh_label.map(|s| format!("Mesh '{}' > Primitive {} > Positions", s, primitive_idx));
-        let positions_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            mesh_label.map(|s| format!("Mesh '{}' > Primitive {} > Vertices", s, primitive_idx));
+        let vertices_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: positions_label.as_deref(),
-            contents: bytemuck::cast_slice(&positions),
+            contents: bytemuck::cast_slice(&vertices),
             usage: wgpu::BufferUsages::VERTEX,
         });
-        let uv: Vec<_> = reader
-            .read_tex_coords(0)
-            .expect("missing uv")
-            .into_f32()
-            .collect();
-        let uv_label =
-            mesh_label.map(|s| format!("Mesh '{}' > Primitive {} > UV", s, primitive_idx));
-        let uv_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: uv_label.as_deref(),
-            contents: bytemuck::cast_slice(&uv),
-            usage: wgpu::BufferUsages::VERTEX,
-        });
+
         let indices: Vec<_> = reader
             .read_indices()
             .expect("missing indices")
@@ -100,6 +95,7 @@ impl Primitive {
             contents: bytemuck::cast_slice(&indices),
             usage: wgpu::BufferUsages::INDEX,
         });
+
         let material = materials[primitive
             .material()
             .index()
@@ -107,9 +103,9 @@ impl Primitive {
         .clone();
 
         Ok(Self {
-            positions_buffer,
-            uv_buffer,
+            vertices_buffer,
             indices_buffer,
+
             num_elements: indices.len().try_into().expect("int overflow"),
             material,
         })
@@ -121,8 +117,7 @@ impl Primitive {
         view_projection: &Matrix4<f32>,
         transform: &Matrix4<f32>,
     ) {
-        pass.set_vertex_buffer(0, self.positions_buffer.slice(..));
-        pass.set_vertex_buffer(1, self.uv_buffer.slice(..));
+        pass.set_vertex_buffer(0, self.vertices_buffer.slice(..));
         pass.set_index_buffer(self.indices_buffer.slice(..), wgpu::IndexFormat::Uint32);
         self.material.as_ref().set_bind_group(pass, 0);
         let raw_transform: [u8; 2 * 4 * 16] =

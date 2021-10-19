@@ -195,7 +195,10 @@ impl Overlay {
                     stencil_ops: None,
                 }),
             });
-            self.scene.draw(&mut rpass);
+            self.scene.draw(
+                &mut rpass,
+                self.rotation.cast::<f32>().expect("always success"),
+            );
         }
 
         self.queue.submit(Some(encoder.finish()));
