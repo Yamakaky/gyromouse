@@ -11,24 +11,18 @@ use sdl2::{
 use wgpu::util::DeviceExt;
 
 use crate::backend::sdl::{
-    model::{self, ModelVertex, Vertex},
-    texture,
+    model::{ModelVertex, Vertex},
+    scene, texture,
 };
-
-use super::model::DrawModel;
-
-const SAMPLE_COUNT: u32 = 4;
 
 pub struct Overlay {
     depth_texture: texture::Texture,
-    uniform_bind_group: wgpu::BindGroup,
-    model: model::Model,
+    scene: scene::Scene,
     window: Window,
     surface: wgpu::Surface,
     device: wgpu::Device,
     queue: wgpu::Queue,
     multisampled_framebuffer: wgpu::TextureView,
-    pipeline: wgpu::RenderPipeline,
     config: wgpu::SurfaceConfiguration,
     rotation: Quaternion<f64>,
 }
@@ -54,7 +48,7 @@ impl Overlay {
             .unwrap();
 
         let limits = wgpu::Limits {
-            max_push_constant_size: 64,
+            max_push_constant_size: 128,
             ..wgpu::Limits::downlevel_defaults()
         };
         let (device, queue) = pollster::block_on(adapter.request_device(
@@ -75,132 +69,28 @@ impl Overlay {
         };
         surface.configure(&device, &config);
 
-        // Create other resources
-        let mx_total = generate_matrix(width as f32 / height as f32);
-        let mx_ref: &[f32; 16] = mx_total.as_ref();
-        let uniform_buf = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: Some("Uniform Buffer"),
-            contents: bytemuck::cast_slice(mx_ref),
-            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
-        });
-
-        let shader = device.create_shader_module(&wgpu::ShaderModuleDescriptor {
-            label: Some("shad"),
-            source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(include_str!("shader.wgsl"))),
-        });
-
-        let vertex_buffers = [ModelVertex::desc()];
-
-        // Create pipeline layout
-        let uniform_bind_group_layout =
-            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-                label: Some("Bind group Layout"),
-                entries: &[wgpu::BindGroupLayoutEntry {
-                    binding: 0,
-                    visibility: wgpu::ShaderStages::VERTEX,
-                    ty: wgpu::BindingType::Buffer {
-                        ty: wgpu::BufferBindingType::Uniform,
-                        has_dynamic_offset: false,
-                        min_binding_size: wgpu::BufferSize::new(64),
-                    },
-                    count: None,
-                }],
-            });
-        let uniform_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
-            label: Some("uniform bind group"),
-            layout: &uniform_bind_group_layout,
-            entries: &[wgpu::BindGroupEntry {
-                binding: 0,
-                resource: wgpu::BindingResource::Buffer(wgpu::BufferBinding {
-                    buffer: &uniform_buf,
-                    offset: 0,
-                    size: None,
-                }),
-            }],
-        });
-
-        let texture_bind_group_layout =
-            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-                entries: &[
-                    wgpu::BindGroupLayoutEntry {
-                        binding: 0,
-                        visibility: wgpu::ShaderStages::FRAGMENT,
-                        ty: wgpu::BindingType::Texture {
-                            multisampled: false,
-                            view_dimension: wgpu::TextureViewDimension::D2,
-                            sample_type: wgpu::TextureSampleType::Float { filterable: true },
-                        },
-                        count: None,
-                    },
-                    wgpu::BindGroupLayoutEntry {
-                        binding: 1,
-                        visibility: wgpu::ShaderStages::FRAGMENT,
-                        ty: wgpu::BindingType::Sampler {
-                            comparison: false,
-                            filtering: true,
-                        },
-                        count: None,
-                    },
-                ],
-                label: Some("texture_bind_group_layout"),
-            });
-
-        let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-            label: Some("my pipeline layout"),
-            bind_group_layouts: &[&texture_bind_group_layout, &uniform_bind_group_layout],
-            push_constant_ranges: &[wgpu::PushConstantRange {
-                stages: wgpu::ShaderStages::VERTEX,
-                range: 0..64,
-            }],
-        });
-        let pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
-            label: Some("my pipeline"),
-            layout: Some(&pipeline_layout),
-            vertex: wgpu::VertexState {
-                module: &shader,
-                entry_point: "vs_main",
-                buffers: &vertex_buffers,
-            },
-            fragment: Some(wgpu::FragmentState {
-                module: &shader,
-                entry_point: "fs_main",
-                targets: &[surface.get_preferred_format(&adapter).unwrap().into()],
-            }),
-            primitive: wgpu::PrimitiveState {
-                cull_mode: Some(wgpu::Face::Back),
-                ..Default::default()
-            },
-            depth_stencil: Some(wgpu::DepthStencilState {
-                format: texture::Texture::DEPTH_FORMAT,
-                depth_write_enabled: true,
-                depth_compare: wgpu::CompareFunction::Less,
-                stencil: wgpu::StencilState::default(),
-                bias: wgpu::DepthBiasState::default(),
-            }),
-            multisample: wgpu::MultisampleState {
-                count: SAMPLE_COUNT,
-                ..Default::default()
-            },
-        });
-
         let multisampled_framebuffer = Self::create_multisampled_framebuffer(&device, &config);
 
         let res_dir = std::path::Path::new("models");
-        let model = model::Model::load(
+        let scene = scene::Scene::load(
             &device,
             &queue,
-            &texture_bind_group_layout,
-            res_dir.join("controller.obj"),
+            surface.get_preferred_format(&adapter).unwrap().into(),
+            res_dir.join("controller.gltf"),
+            width,
+            height,
         )?;
 
-        let depth_texture =
-            texture::Texture::create_depth_texture(&device, &config, SAMPLE_COUNT, "depth texture");
+        let depth_texture = texture::Texture::create_depth_texture(
+            &device,
+            &config,
+            scene::SAMPLE_COUNT,
+            "depth texture",
+        );
 
         Ok(Self {
             depth_texture,
-            uniform_bind_group,
-            model,
-            pipeline,
+            scene,
             device,
             surface,
             queue,
@@ -223,7 +113,7 @@ impl Overlay {
         let multisampled_frame_descriptor = &wgpu::TextureDescriptor {
             size: multisampled_texture_extent,
             mip_level_count: 1,
-            sample_count: SAMPLE_COUNT,
+            sample_count: scene::SAMPLE_COUNT,
             dimension: wgpu::TextureDimension::D2,
             format: config.format,
             usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
@@ -250,7 +140,7 @@ impl Overlay {
                 self.depth_texture = texture::Texture::create_depth_texture(
                     &self.device,
                     &self.config,
-                    SAMPLE_COUNT,
+                    scene::SAMPLE_COUNT,
                     "depth texture",
                 );
             }
@@ -309,13 +199,7 @@ impl Overlay {
                     stencil_ops: None,
                 }),
             });
-            rpass.push_debug_group("Prepare data for draw.");
-            rpass.set_pipeline(&self.pipeline);
-            let rot_raw: [u8; 4 * 16] =
-                unsafe { std::mem::transmute(Matrix4::from(self.rotation.cast::<f32>().unwrap())) };
-
-            rpass.set_push_constants(wgpu::ShaderStages::VERTEX, 0, &rot_raw);
-            rpass.draw_model(&self.model, &self.uniform_bind_group);
+            self.scene.draw(&mut rpass);
         }
 
         self.queue.submit(Some(encoder.finish()));
@@ -325,21 +209,3 @@ impl Overlay {
         Ok(())
     }
 }
-fn generate_matrix(aspect_ratio: f32) -> cgmath::Matrix4<f32> {
-    let mx_projection = cgmath::perspective(cgmath::Deg(45f32), aspect_ratio, 1.0, 10.0);
-    let mx_view = cgmath::Matrix4::look_at_rh(
-        cgmath::Point3::new(0., 5., 0.),
-        cgmath::Point3::new(0., 0., 0.),
-        -cgmath::Vector3::unit_z(),
-    );
-    let mx_correction = OPENGL_TO_WGPU_MATRIX;
-    mx_correction * mx_projection * mx_view
-}
-
-#[rustfmt::skip]
-pub const OPENGL_TO_WGPU_MATRIX: cgmath::Matrix4<f32> = cgmath::Matrix4::new(
-    1.0, 0.0, 0.0, 0.0,
-    0.0, 1.0, 0.0, 0.0,
-    0.0, 0.0, 0.5, 0.0,
-    0.0, 0.0, 0.5, 1.0,
-);

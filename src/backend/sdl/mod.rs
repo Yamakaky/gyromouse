@@ -1,9 +1,13 @@
 #[cfg(feature = "gui")]
 mod gui;
 #[cfg(feature = "gui")]
+mod material;
+#[cfg(feature = "gui")]
 mod model;
 #[cfg(feature = "gui")]
 mod overlay;
+#[cfg(feature = "gui")]
+mod scene;
 #[cfg(feature = "gui")]
 mod texture;
 
@@ -44,8 +48,8 @@ pub struct SDLBackend {
     mouse: Mouse,
     #[cfg(feature = "gui")]
     wgpu_instance: wgpu::Instance,
-    #[cfg(feature = "gui")]
-    gui: Gui,
+    // #[cfg(feature = "gui")]
+    // gui: Gui,
     #[cfg(feature = "gui")]
     video_subsystem: VideoSubsystem,
 }
@@ -71,15 +75,15 @@ impl SDLBackend {
         let video_subsystem = sdl.video().expect("can't initialize SDL video");
         #[cfg(feature = "gui")]
         let wgpu_instance = wgpu::Instance::new(wgpu::Backends::PRIMARY);
-        #[cfg(feature = "gui")]
-        let gui = Gui::new(&video_subsystem, &wgpu_instance);
+        //#[cfg(feature = "gui")]
+        //let gui = Gui::new(&video_subsystem, &wgpu_instance);
 
         Ok(Self {
             sdl,
             game_controller_system,
             mouse: Mouse::new(),
-            #[cfg(feature = "gui")]
-            gui,
+            // #[cfg(feature = "gui")]
+            // gui,
             #[cfg(feature = "gui")]
             video_subsystem,
             #[cfg(feature = "gui")]
@@ -234,7 +238,7 @@ impl Backend for SDLBackend {
                             controller.overlay.event(&event);
                         }
 
-                        self.gui.event(event);
+                        // self.gui.event(event);
                     }
                     #[cfg(not(feature = "gui"))]
                     _ => {}
@@ -311,8 +315,8 @@ impl Backend for SDLBackend {
                 )?;
             }
 
-            #[cfg(feature = "gui")]
-            self.gui.tick(dt);
+            // #[cfg(feature = "gui")]
+            // self.gui.tick(dt);
 
             last_tick = now;
             sleep(Duration::from_millis(1));
@@ -347,5 +351,12 @@ fn sdl_to_sys(button: Button) -> JoyKey {
         Button::DPadDown => JoyKey::Down,
         Button::DPadLeft => JoyKey::Left,
         Button::DPadRight => JoyKey::Right,
+        // TODO: Add missing variants to JoyKey
+        Button::Misc1 => JoyKey::Capture,
+        Button::Paddle1 => JoyKey::Capture,
+        Button::Paddle2 => JoyKey::Capture,
+        Button::Paddle3 => JoyKey::Capture,
+        Button::Paddle4 => JoyKey::Capture,
+        Button::Touchpad => JoyKey::Capture,
     }
 }

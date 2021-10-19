@@ -1,10 +1,10 @@
 use anyhow::*;
-use std::ops::Range;
-use std::path::Path;
-use tobj::LoadOptions;
+use cgmath::{Matrix4, Transform};
+use std::convert::TryInto;
+use std::sync::Arc;
 use wgpu::util::DeviceExt;
 
-use super::texture;
+use super::material::{Material, Materials};
 
 pub trait Vertex {
     fn desc<'a>() -> wgpu::VertexBufferLayout<'a>;
@@ -45,183 +45,188 @@ impl Vertex for ModelVertex {
     }
 }
 
-pub struct Material {
-    pub name: String,
-    pub diffuse_texture: texture::Texture,
-    pub bind_group: wgpu::BindGroup,
+pub struct Primitive {
+    positions_buffer: wgpu::Buffer,
+    uv_buffer: wgpu::Buffer,
+    indices_buffer: wgpu::Buffer,
+    num_elements: u32,
+    material: Arc<Material>,
+}
+
+impl Primitive {
+    pub fn load(
+        device: &wgpu::Device,
+        queue: &wgpu::Queue,
+        primitive: gltf::Primitive,
+        materials: &Materials,
+        buffers: &[gltf::buffer::Data],
+        mesh_label: Option<&str>,
+        primitive_idx: usize,
+    ) -> Result<Self> {
+        assert_eq!(primitive.mode(), gltf::mesh::Mode::Triangles);
+        let reader = primitive.reader(|buffer| Some(&buffers[buffer.index()]));
+
+        let positions: Vec<_> = reader
+            .read_positions()
+            .expect("missing positions")
+            .collect();
+        let positions_label =
+            mesh_label.map(|s| format!("Mesh '{}' > Primitive {} > Positions", s, primitive_idx));
+        let positions_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: positions_label.as_deref(),
+            contents: bytemuck::cast_slice(&positions),
+            usage: wgpu::BufferUsages::VERTEX,
+        });
+        let uv: Vec<_> = reader
+            .read_tex_coords(0)
+            .expect("missing uv")
+            .into_f32()
+            .collect();
+        let uv_label =
+            mesh_label.map(|s| format!("Mesh '{}' > Primitive {} > UV", s, primitive_idx));
+        let uv_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: uv_label.as_deref(),
+            contents: bytemuck::cast_slice(&uv),
+            usage: wgpu::BufferUsages::VERTEX,
+        });
+        let indices: Vec<_> = reader
+            .read_indices()
+            .expect("missing indices")
+            .into_u32()
+            .collect();
+        let indices_label =
+            mesh_label.map(|s| format!("Mesh '{}' > Primitive '{}' > Indices", s, primitive_idx));
+        let indices_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: indices_label.as_deref(),
+            contents: bytemuck::cast_slice(&indices),
+            usage: wgpu::BufferUsages::INDEX,
+        });
+        let material = materials[primitive
+            .material()
+            .index()
+            .expect("missing material index")]
+        .clone();
+
+        Ok(Self {
+            positions_buffer,
+            uv_buffer,
+            indices_buffer,
+            num_elements: indices.len().try_into().expect("int overflow"),
+            material,
+        })
+    }
+
+    fn draw<'a>(
+        &'a self,
+        pass: &mut wgpu::RenderPass<'a>,
+        view_projection: &Matrix4<f32>,
+        transform: &Matrix4<f32>,
+    ) {
+        pass.set_vertex_buffer(0, self.positions_buffer.slice(..));
+        pass.set_vertex_buffer(1, self.uv_buffer.slice(..));
+        pass.set_index_buffer(self.indices_buffer.slice(..), wgpu::IndexFormat::Uint32);
+        self.material.as_ref().set_bind_group(pass, 0);
+        let raw_transform: [u8; 2 * 4 * 16] =
+            unsafe { std::mem::transmute((view_projection * transform, transform.clone())) };
+        pass.set_push_constants(wgpu::ShaderStages::VERTEX, 0, &raw_transform);
+        pass.draw_indexed(0..self.num_elements, 0, 0..1)
+    }
 }
 
 pub struct Mesh {
-    pub name: String,
-    pub vertex_buffer: wgpu::Buffer,
-    pub index_buffer: wgpu::Buffer,
-    pub num_elements: u32,
-    pub material: usize,
+    name: Option<String>,
+    primitives: Vec<Primitive>,
+}
+
+impl Mesh {
+    pub fn load(
+        device: &wgpu::Device,
+        queue: &wgpu::Queue,
+        mesh: gltf::Mesh,
+        materials: &Materials,
+        buffers: &[gltf::buffer::Data],
+    ) -> Result<Self> {
+        let name = mesh.name().map(String::from);
+        let primitives = mesh
+            .primitives()
+            .enumerate()
+            .map(|(i, primitive)| {
+                Primitive::load(
+                    device,
+                    queue,
+                    primitive,
+                    materials,
+                    buffers,
+                    name.as_deref(),
+                    i,
+                )
+            })
+            .collect::<Result<_>>()?;
+
+        Ok(Self { name, primitives })
+    }
+
+    fn draw<'a>(
+        &'a self,
+        pass: &mut wgpu::RenderPass<'a>,
+        view_projection: &Matrix4<f32>,
+        transform: &Matrix4<f32>,
+    ) {
+        if let Some(name) = &self.name {
+            pass.push_debug_group(&format!("Render {}", name));
+        }
+        for primitive in &self.primitives {
+            primitive.draw(pass, view_projection, transform);
+        }
+        if self.name.is_some() {
+            pass.pop_debug_group();
+        }
+    }
 }
 
 pub struct Model {
-    pub meshes: Vec<Mesh>,
-    pub materials: Vec<Material>,
+    transform: Matrix4<f32>,
+    mesh: Option<Mesh>,
+    children: Vec<Model>,
 }
 
 impl Model {
-    pub fn load<P: AsRef<Path>>(
+    pub fn load(
         device: &wgpu::Device,
         queue: &wgpu::Queue,
-        layout: &wgpu::BindGroupLayout,
-        path: P,
+        node: gltf::Node,
+        materials: &Materials,
+        buffers: &[gltf::buffer::Data],
     ) -> Result<Self> {
-        let (obj_models, obj_materials) = tobj::load_obj(
-            path.as_ref(),
-            &LoadOptions {
-                triangulate: true,
-                single_index: true,
-                ..Default::default()
-            },
-        )?;
+        let transform = node.transform().matrix().into();
+        let mesh = node
+            .mesh()
+            .map(|mesh| Mesh::load(device, queue, mesh, materials, buffers))
+            .transpose()?;
+        let children = node
+            .children()
+            .map(|child| Model::load(device, queue, child, materials, buffers))
+            .collect::<Result<_>>()?;
 
-        let obj_materials = obj_materials?;
+        Ok(Self {
+            transform,
+            mesh,
+            children,
+        })
+    }
 
-        // We're assuming that the texture files are stored with the obj file
-        let containing_folder = path.as_ref().parent().context("Directory has no parent")?;
-
-        let mut materials = Vec::new();
-        for mat in obj_materials {
-            let diffuse_path = mat.diffuse_texture;
-
-            let diffuse_texture =
-                texture::Texture::load(device, queue, containing_folder.join(diffuse_path))
-                    .context("loading material texture")?;
-
-            let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
-                layout,
-                entries: &[
-                    wgpu::BindGroupEntry {
-                        binding: 0,
-                        resource: wgpu::BindingResource::TextureView(&diffuse_texture.view),
-                    },
-                    wgpu::BindGroupEntry {
-                        binding: 1,
-                        resource: wgpu::BindingResource::Sampler(&diffuse_texture.sampler),
-                    },
-                ],
-                label: None,
-            });
-
-            materials.push(Material {
-                name: mat.name,
-                diffuse_texture,
-                bind_group,
-            });
+    pub fn draw<'a>(
+        &'a self,
+        pass: &mut wgpu::RenderPass<'a>,
+        view_projection: &Matrix4<f32>,
+        parent_transform: &Matrix4<f32>,
+    ) {
+        let transform = parent_transform.concat(&self.transform);
+        if let Some(mesh) = &self.mesh {
+            mesh.draw(pass, view_projection, &transform);
         }
-
-        let mut meshes = Vec::new();
-        for m in obj_models {
-            let mut vertices = Vec::new();
-            for i in 0..m.mesh.positions.len() / 3 {
-                vertices.push(ModelVertex {
-                    position: [
-                        m.mesh.positions[i * 3],
-                        m.mesh.positions[i * 3 + 1],
-                        m.mesh.positions[i * 3 + 2],
-                    ],
-                    tex_coords: [m.mesh.texcoords[i * 2], m.mesh.texcoords[i * 2 + 1]],
-                    normal: [
-                        m.mesh.normals[i * 3],
-                        m.mesh.normals[i * 3 + 1],
-                        m.mesh.normals[i * 3 + 2],
-                    ],
-                });
-            }
-
-            let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-                label: Some(&format!("{:?} Vertex Buffer", path.as_ref())),
-                contents: bytemuck::cast_slice(&vertices),
-                usage: wgpu::BufferUsages::VERTEX,
-            });
-            let index_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-                label: Some(&format!("{:?} Index Buffer", path.as_ref())),
-                contents: bytemuck::cast_slice(&m.mesh.indices),
-                usage: wgpu::BufferUsages::INDEX,
-            });
-
-            meshes.push(Mesh {
-                name: m.name,
-                vertex_buffer,
-                index_buffer,
-                num_elements: m.mesh.indices.len() as u32,
-                material: m.mesh.material_id.unwrap_or(0),
-            });
-        }
-
-        Ok(Self { meshes, materials })
-    }
-}
-
-pub trait DrawModel<'a> {
-    fn draw_mesh(
-        &mut self,
-        mesh: &'a Mesh,
-        material: &'a Material,
-        camera_bind_group: &'a wgpu::BindGroup,
-    );
-    fn draw_mesh_instanced(
-        &mut self,
-        mesh: &'a Mesh,
-        material: &'a Material,
-        instances: Range<u32>,
-        camera_bind_group: &'a wgpu::BindGroup,
-    );
-
-    fn draw_model(&mut self, model: &'a Model, camera_bind_group: &'a wgpu::BindGroup);
-    fn draw_model_instanced(
-        &mut self,
-        model: &'a Model,
-        instances: Range<u32>,
-        camera_bind_group: &'a wgpu::BindGroup,
-    );
-}
-
-impl<'a, 'b> DrawModel<'b> for wgpu::RenderPass<'a>
-where
-    'b: 'a,
-{
-    fn draw_mesh(
-        &mut self,
-        mesh: &'b Mesh,
-        material: &'b Material,
-        camera_bind_group: &'b wgpu::BindGroup,
-    ) {
-        self.draw_mesh_instanced(mesh, material, 0..1, camera_bind_group);
-    }
-
-    fn draw_mesh_instanced(
-        &mut self,
-        mesh: &'b Mesh,
-        material: &'b Material,
-        instances: Range<u32>,
-        camera_bind_group: &'b wgpu::BindGroup,
-    ) {
-        self.set_vertex_buffer(0, mesh.vertex_buffer.slice(..));
-        self.set_index_buffer(mesh.index_buffer.slice(..), wgpu::IndexFormat::Uint32);
-        self.set_bind_group(0, &material.bind_group, &[]);
-        self.set_bind_group(1, camera_bind_group, &[]);
-        self.draw_indexed(0..mesh.num_elements, 0, instances);
-    }
-
-    fn draw_model(&mut self, model: &'b Model, camera_bind_group: &'b wgpu::BindGroup) {
-        self.draw_model_instanced(model, 0..1, camera_bind_group);
-    }
-
-    fn draw_model_instanced(
-        &mut self,
-        model: &'b Model,
-        instances: Range<u32>,
-        camera_bind_group: &'b wgpu::BindGroup,
-    ) {
-        for mesh in &model.meshes {
-            let material = &model.materials[mesh.material];
-            self.draw_mesh_instanced(mesh, material, instances.clone(), camera_bind_group);
+        for child in &self.children {
+            child.draw(pass, view_projection, &transform);
         }
     }
 }

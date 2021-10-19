@@ -17,31 +17,36 @@ struct VertexOutput {
 
 [[block]]
 struct PushConstants {
-    rot: mat4x4<f32>;
+    mvp: mat4x4<f32>;
+    model: mat4x4<f32>;
 };
 var<push_constant> push: PushConstants;
 
-[[block]]
-struct Uniforms {
-    transform: mat4x4<f32>;
-};
-[[group(1), binding(0)]]
-var<uniform> r_locals: Uniforms;
 
 [[stage(vertex)]]
 fn vs_main(model: VertexInput) -> VertexOutput {
     var out: VertexOutput;
     out.tex_coords = model.tex_coords;
-    out.position = r_locals.transform * push.rot * vec4<f32>(model.position, 1.0);
+    out.position = push.mvp * vec4<f32>(model.position, 1.0);
     return out;
 }
 
+[[block]]
+struct MaterialOptions {
+    diffuse_enabled: u32;
+};
 [[group(0), binding(0)]]
-var t_diffuse: texture_2d<f32>;
+var<uniform> options: MaterialOptions;
 [[group(0), binding(1)]]
+var t_diffuse: texture_2d<f32>;
+[[group(0), binding(2)]]
 var s_diffuse: sampler;
 
 [[stage(fragment)]]
 fn fs_main(in: VertexOutput) -> [[location(0)]] vec4<f32> {
-    return textureSample(t_diffuse, s_diffuse, vec2<f32>(in.tex_coords.x, 1.0 - in.tex_coords.y));
+    if (options.diffuse_enabled == 1u) {
+        return textureSample(t_diffuse, s_diffuse, vec2<f32>(in.tex_coords.x, 1.0 - in.tex_coords.y));
+    } else {
+        return vec4<f32>(1.);
+    }
 }

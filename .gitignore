@@ -4,3 +4,7 @@
 /models/*.obj
 /models/*.mtl
 /models/*.jpg
+/models/*.png
+/models/*.gltf
+/models/*.glb
+/models/*.bin
