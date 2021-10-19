@@ -38,8 +38,6 @@ use crate::{
     mouse::Mouse,
 };
 
-use self::gui::Gui;
-
 use super::Backend;
 
 pub struct SDLBackend {
@@ -49,7 +47,7 @@ pub struct SDLBackend {
     #[cfg(feature = "gui")]
     wgpu_instance: wgpu::Instance,
     // #[cfg(feature = "gui")]
-    // gui: Gui,
+    // gui: self::gui::Gui,
     #[cfg(feature = "gui")]
     video_subsystem: VideoSubsystem,
 }
@@ -76,7 +74,7 @@ impl SDLBackend {
         #[cfg(feature = "gui")]
         let wgpu_instance = wgpu::Instance::new(wgpu::Backends::PRIMARY);
         //#[cfg(feature = "gui")]
-        //let gui = Gui::new(&video_subsystem, &wgpu_instance);
+        //let gui = self::gui::Gui::new(&video_subsystem, &wgpu_instance);
 
         Ok(Self {
             sdl,

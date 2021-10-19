@@ -12,14 +12,14 @@ default = ["sdl2", "vgamepad", "gui"]
 hidapi = ["hid-gamepad", "joycon"]
 sdl2-static = ["sdl2", "sdl2/static-link", "sdl2/use-vcpkg"]
 vgamepad = ["virtual-gamepad"]
-gui = ["sdl2", "egui", "egui_sdl2_gl", "egui_wgpu_backend", "wgpu", "pollster", "bytemuck", "image", "gltf"]
+gui = ["sdl2", "egui", "egui_sdl2_gl", "egui_wgpu_backend", "wgpu", "pollster", "bytemuck", "image", "gltf", "crevice", "mint"]
 
 [profile.release]
 lto = true
 
 [dependencies]
 anyhow = { version = "1.0.44", features = ["backtrace"] }
-cgmath = "0.18.0"
+cgmath = { version = "0.18.0", features = ["mint"] }
 clap = "3.0.0-beta.5"
 enigo = { git = "https://github.com/Yamakaky/enigo", branch = "xdo-sys" }
 # see https://gitlab.com/KonradBorowski/enum-map/-/issues/20
@@ -40,6 +40,8 @@ pollster = { version = "0.2.4", optional = true }
 egui_wgpu_backend = { version = "0.13.0", optional = true }
 image = { version = "0.23.14", optional = true, default-features = false, features = ["jpeg"] }
 gltf = { version = "0.16.0", optional = true }
+crevice = { version = "0.7.1", optional = true }
+mint = { version = "0.5.7", optional = true }
 
 [dependencies.sdl2]
 version = "0.35.0"

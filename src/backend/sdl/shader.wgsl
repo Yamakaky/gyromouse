@@ -32,11 +32,12 @@ fn vs_main(model: VertexInput) -> VertexOutput {
 }
 
 [[block]]
-struct MaterialOptions {
-    diffuse_enabled: u32;
+struct Material {
+    base_color: vec4<f32>;
+    use_diffuse_texture: u32;
 };
 [[group(0), binding(0)]]
-var<uniform> options: MaterialOptions;
+var<uniform> material: Material;
 [[group(0), binding(1)]]
 var t_diffuse: texture_2d<f32>;
 [[group(0), binding(2)]]
@@ -44,9 +45,9 @@ var s_diffuse: sampler;
 
 [[stage(fragment)]]
 fn fs_main(in: VertexOutput) -> [[location(0)]] vec4<f32> {
-    if (options.diffuse_enabled == 1u) {
-        return textureSample(t_diffuse, s_diffuse, vec2<f32>(in.tex_coords.x, 1.0 - in.tex_coords.y));
-    } else {
-        return vec4<f32>(1.);
+    var color = material.base_color;
+    if (material.use_diffuse_texture == 1u) {
+        color = color * textureSample(t_diffuse, s_diffuse, in.tex_coords);
     }
+    return color;
 }

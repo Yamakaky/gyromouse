@@ -56,7 +56,6 @@ pub struct Primitive {
 impl Primitive {
     pub fn load(
         device: &wgpu::Device,
-        queue: &wgpu::Queue,
         primitive: gltf::Primitive,
         materials: &Materials,
         buffers: &[gltf::buffer::Data],
@@ -141,7 +140,6 @@ pub struct Mesh {
 impl Mesh {
     pub fn load(
         device: &wgpu::Device,
-        queue: &wgpu::Queue,
         mesh: gltf::Mesh,
         materials: &Materials,
         buffers: &[gltf::buffer::Data],
@@ -151,15 +149,7 @@ impl Mesh {
             .primitives()
             .enumerate()
             .map(|(i, primitive)| {
-                Primitive::load(
-                    device,
-                    queue,
-                    primitive,
-                    materials,
-                    buffers,
-                    name.as_deref(),
-                    i,
-                )
+                Primitive::load(device, primitive, materials, buffers, name.as_deref(), i)
             })
             .collect::<Result<_>>()?;
 
@@ -193,7 +183,6 @@ pub struct Model {
 impl Model {
     pub fn load(
         device: &wgpu::Device,
-        queue: &wgpu::Queue,
         node: gltf::Node,
         materials: &Materials,
         buffers: &[gltf::buffer::Data],
@@ -201,11 +190,11 @@ impl Model {
         let transform = node.transform().matrix().into();
         let mesh = node
             .mesh()
-            .map(|mesh| Mesh::load(device, queue, mesh, materials, buffers))
+            .map(|mesh| Mesh::load(device, mesh, materials, buffers))
             .transpose()?;
         let children = node
             .children()
-            .map(|child| Model::load(device, queue, child, materials, buffers))
+            .map(|child| Model::load(device, child, materials, buffers))
             .collect::<Result<_>>()?;
 
         Ok(Self {

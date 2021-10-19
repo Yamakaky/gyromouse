@@ -11,6 +11,7 @@ use super::{material::Materials, model::Model};
 pub const SAMPLE_COUNT: u32 = 4;
 
 pub struct Scene {
+    #[allow(unused)]
     materials: Materials,
     models: Vec<Model>,
     view_projection: Matrix4<f32>,
@@ -32,7 +33,7 @@ impl Scene {
         let materials = Materials::load(device, queue, &buffers, &document)?;
         let models = scene
             .nodes()
-            .map(|node| Model::load(device, queue, node, &materials, &buffers))
+            .map(|node| Model::load(device, node, &materials, &buffers))
             .collect::<Result<_>>()?;
 
         // Create other resources

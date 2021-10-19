@@ -259,6 +259,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1a98d30140e3296250832bbaaff83b27dcd6fa3cc70fb6f1f3e5c9c0023b5317"
 dependencies = [
  "approx",
+ "mint",
  "num-traits",
 ]
 
@@ -378,6 +379,28 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "81156fece84ab6a9f2afdb109ce3ae577e42b1228441eded99bd77f627953b1a"
 dependencies = [
  "cfg-if",
+]
+
+[[package]]
+name = "crevice"
+version = "0.7.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0388841c63d751d6444f5ebcf55bc98dde119e2a6547e7acda457cda3b36c55a"
+dependencies = [
+ "bytemuck",
+ "crevice-derive",
+ "mint",
+]
+
+[[package]]
+name = "crevice-derive"
+version = "0.7.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d77417e514ad5c6d9ceb5e193c738db439a394ee7e602285feffc8dfc9bda7d0"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
 ]
 
 [[package]]
@@ -682,6 +705,7 @@ dependencies = [
  "bytemuck",
  "cgmath",
  "clap",
+ "crevice",
  "egui",
  "egui_sdl2_gl",
  "egui_wgpu_backend",
@@ -694,6 +718,7 @@ dependencies = [
  "human-panic",
  "image",
  "joycon",
+ "mint",
  "nom",
  "nom-supreme",
  "pollster",
@@ -1029,6 +1054,12 @@ dependencies = [
  "adler",
  "autocfg",
 ]
+
+[[package]]
+name = "mint"
+version = "0.5.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "793e84ff3f9a63214a5475097fac2a3e3674f862efcaeabebf5f4da36d7512ec"
 
 [[package]]
 name = "naga"

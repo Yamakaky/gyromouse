@@ -1,7 +1,8 @@
 use std::{collections::HashMap, ops::Index, sync::Arc};
 
-use anyhow::Result;
+use anyhow::{bail, Result};
 use cgmath::Vector4;
+use crevice::std430::{AsStd430, Std430};
 use gltf::{
     texture::{MagFilter, MinFilter},
     Document,
@@ -89,10 +90,20 @@ impl Index<MaterialId> for Materials {
     }
 }
 
+#[derive(Debug, Clone, Copy, crevice::std430::AsStd430)]
+struct MaterialData {
+    base_color: mint::Vector4<f32>,
+    use_base_color_texture: u32,
+}
+
 pub struct Material {
+    #[allow(unused)]
     name: Option<String>,
+    #[allow(unused)]
     base_color: Vector4<f32>,
+    #[allow(unused)]
     base_color_texture: Option<texture::Texture>,
+    #[allow(unused)]
     option_buffer: wgpu::Buffer,
     bind_group: wgpu::BindGroup,
 }
@@ -107,6 +118,7 @@ impl Material {
     ) -> Result<Material> {
         let name = mat.name();
         let pbr = mat.pbr_metallic_roughness();
+        let base_color = Vector4::from(pbr.base_color_factor());
         let base_color_texture = pbr
             .base_color_texture()
             .map(|info| {
@@ -123,19 +135,20 @@ impl Material {
             })
             .transpose()?;
 
-        let options = MaterialOptions {
-            base_color_texture: base_color_texture.is_some().into(),
+        let data = MaterialData {
+            base_color: base_color.into(),
+            use_base_color_texture: base_color_texture.is_some().into(),
         };
-        let options_label = name.map(|s| format!("Material '{}' > Options", s));
-        let option_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: options_label.as_deref(),
-            contents: bytemuck::bytes_of(&options),
+        let data_label = name.map(|s| format!("Material '{}' > Data", s));
+        let data_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: data_label.as_deref(),
+            contents: data.as_std430().as_bytes(),
             usage: wgpu::BufferUsages::UNIFORM,
         });
         let mut bind_group_entries = vec![wgpu::BindGroupEntry {
             binding: 0,
             resource: wgpu::BindingResource::Buffer(wgpu::BufferBinding {
-                buffer: &option_buffer,
+                buffer: &data_buffer,
                 offset: 0,
                 size: None,
             }),
@@ -160,9 +173,9 @@ impl Material {
 
         Ok(Self {
             name: name.map(String::from),
-            base_color: pbr.base_color_factor().into(),
+            base_color,
             base_color_texture,
-            option_buffer,
+            option_buffer: data_buffer,
             bind_group,
         })
     }
@@ -180,11 +193,11 @@ impl Material {
                 Ok(match mime_type {
                     "image/jpeg" => image::load_from_memory_with_format(data, ImageFormat::Jpeg)?,
                     "image/png" => image::load_from_memory_with_format(data, ImageFormat::Png)?,
-                    _ => panic!(format!(
+                    _ => bail!(
                         "unsupported image type (image: {}, mime_type: {})",
                         texture.index(),
                         mime_type
-                    )),
+                    ),
                 })
             }
             gltf::image::Source::Uri { uri, mime_type } => todo!(),
@@ -234,10 +247,4 @@ impl Material {
     pub fn set_bind_group<'a>(&'a self, pass: &mut wgpu::RenderPass<'a>, index: u32) {
         pass.set_bind_group(index, &self.bind_group, &[])
     }
-}
-
-#[derive(Debug, Clone, Copy, bytemuck::Pod, bytemuck::Zeroable)]
-#[repr(C)]
-struct MaterialOptions {
-    base_color_texture: u32,
 }
