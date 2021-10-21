@@ -2,10 +2,9 @@
 name = "gyromouse"
 version = "0.1.0"
 authors = ["Mikaël Fourrier <mikael.fourrier@pm.me>"]
-edition = "2018"
+edition = "2021"
 description = "Input mapper for gamepads in game and desktop"
 repository = "https://github.com/Yamakaky/gyromouse"
-resolver = "2"
 
 [features]
 default = ["sdl2", "vgamepad", "gui"]

@@ -1,10 +1,13 @@
 use anyhow::*;
-use cgmath::{Matrix4, Transform};
+use cgmath::{Decomposed, Matrix4, Quaternion, Transform, Vector3};
 use std::convert::TryInto;
 use std::sync::Arc;
 use wgpu::util::DeviceExt;
 
-use super::material::{Material, Materials};
+use super::{
+    animation::AnimationStore,
+    material::{Material, Materials},
+};
 
 pub trait Vertex {
     fn desc<'a>() -> wgpu::VertexBufferLayout<'a>;
@@ -169,30 +172,43 @@ impl Mesh {
     }
 }
 
-pub struct Model {
-    transform: Matrix4<f32>,
+pub type NodeId = usize;
+
+pub struct Node {
+    id: NodeId,
+    transform: Decomposed<Vector3<f32>, Quaternion<f32>>,
     mesh: Option<Mesh>,
-    children: Vec<Model>,
+    children: Vec<Node>,
 }
 
-impl Model {
+impl Node {
     pub fn load(
         device: &wgpu::Device,
         node: gltf::Node,
         materials: &Materials,
         buffers: &[gltf::buffer::Data],
     ) -> Result<Self> {
-        let transform = node.transform().matrix().into();
+        let id = node.index();
+        let transform = {
+            let (disp, [x, y, z, w], scale) = node.transform().decomposed();
+            assert!(scale[0] == scale[1] && scale[1] == scale[2]);
+            Decomposed {
+                scale: scale[0],
+                rot: Quaternion::new(w, x, y, z),
+                disp: disp.into(),
+            }
+        };
         let mesh = node
             .mesh()
             .map(|mesh| Mesh::load(device, mesh, materials, buffers))
             .transpose()?;
         let children = node
             .children()
-            .map(|child| Model::load(device, child, materials, buffers))
+            .map(|child| Node::load(device, child, materials, buffers))
             .collect::<Result<_>>()?;
 
         Ok(Self {
+            id,
             transform,
             mesh,
             children,
@@ -202,15 +218,21 @@ impl Model {
     pub fn draw<'a>(
         &'a self,
         pass: &mut wgpu::RenderPass<'a>,
+        animations: &AnimationStore,
         view_projection: &Matrix4<f32>,
         parent_transform: &Matrix4<f32>,
     ) {
-        let transform = parent_transform.concat(&self.transform);
+        let transform = parent_transform.concat(
+            &animations
+                .state(self.id)
+                .map(|state| state.update(&self.transform))
+                .unwrap_or_else(|| self.transform.into()),
+        );
         if let Some(mesh) = &self.mesh {
             mesh.draw(pass, view_projection, &transform);
         }
         for child in &self.children {
-            child.draw(pass, view_projection, &transform);
+            child.draw(pass, animations, view_projection, &transform);
         }
     }
 }

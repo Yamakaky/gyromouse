@@ -1,4 +1,6 @@
 #[cfg(feature = "gui")]
+mod animation;
+#[cfg(feature = "gui")]
 mod gui;
 #[cfg(feature = "gui")]
 mod material;

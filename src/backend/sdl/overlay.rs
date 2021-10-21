@@ -3,7 +3,7 @@ use std::{convert::TryInto, time::Duration};
 use anyhow::{Error, Result};
 use cgmath::{Deg, Euler, InnerSpace, One, Quaternion, Rotation, Rotation3, Vector3};
 use sdl2::{
-    controller::GameController,
+    controller::{Axis, GameController},
     event::{Event, WindowEvent},
     video::Window,
     VideoSubsystem,
@@ -149,8 +149,15 @@ impl Overlay {
         delta_rotation: Euler<Deg<f64>>,
         up_vector: cgmath::Vector3<f64>,
         _dt: Duration,
-        _controller: &GameController,
+        controller: &GameController,
     ) -> Result<()> {
+        let animations = &mut self.scene.animations;
+        animations.start_frame();
+        animations.play(
+            animations.get("TRPress").expect("has TRPress animation"),
+            controller.axis(Axis::TriggerRight) as f32 / i16::MAX as f32,
+        );
+
         if delta_rotation != Euler::new(Deg(0.), Deg(0.), Deg(0.)) {
             self.rotation = (self.rotation * Quaternion::from(delta_rotation)).normalize();
             let raw_rot = Euler::from(self.rotation);

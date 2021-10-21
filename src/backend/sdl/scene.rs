@@ -1,4 +1,4 @@
-use std::{borrow::Cow, path::Path};
+use std::{borrow::Cow, ops::Deref, path::Path};
 
 use anyhow::Result;
 use cgmath::Matrix4;
@@ -8,16 +8,17 @@ use crate::backend::sdl::{
     texture,
 };
 
-use super::{material::Materials, model::Model};
+use super::{animation::AnimationStore, material::Materials, model::Node};
 
 pub const SAMPLE_COUNT: u32 = 4;
 
 pub struct Scene {
     #[allow(unused)]
     materials: Materials,
-    models: Vec<Model>,
+    models: Vec<Node>,
     view_projection: Matrix4<f32>,
     pipeline: wgpu::RenderPipeline,
+    pub animations: AnimationStore,
 }
 
 impl Scene {
@@ -35,8 +36,9 @@ impl Scene {
         let materials = Materials::load(device, queue, &buffers, &document)?;
         let models = scene
             .nodes()
-            .map(|node| Model::load(device, node, &materials, &buffers))
+            .map(|node| Node::load(device, node, &materials, &buffers))
             .collect::<Result<_>>()?;
+        let animations = AnimationStore::load(document.animations(), &buffers);
 
         // Create other resources
         let view_projection = generate_matrix(width as f32 / height as f32);
@@ -89,6 +91,7 @@ impl Scene {
             models,
             view_projection,
             pipeline,
+            animations,
         })
     }
 
@@ -97,7 +100,7 @@ impl Scene {
         pass.push_debug_group("Scene render");
         pass.set_pipeline(&self.pipeline);
         for model in &self.models {
-            model.draw(pass, &self.view_projection, &transform);
+            model.draw(pass, &self.animations, &self.view_projection, &transform);
         }
         pass.pop_debug_group();
     }
