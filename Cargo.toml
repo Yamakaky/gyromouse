@@ -30,16 +30,16 @@ nom = "7.0.0"
 nom-supreme = "0.6.0"
 human-panic = "1.0.3"
 virtual-gamepad = { git = "https://github.com/Yamakaky/virtual-gamepad", optional = true }
-egui = { version = "0.14.2", optional = true }
+egui = { version = "0.15.0", optional = true }
 egui_sdl2_gl = { git = "https://github.com/Yamakaky/egui_sdl2_gl", branch = "yama-sdl", optional = true, default-features = false }
 wgpu = { version = "0.11.0", optional = true }
 bytemuck = { version = "1.7.2", optional = true, features = ["derive"] }
 env_logger = "0.9.0"
 pollster = { version = "0.2.4", optional = true }
-egui_wgpu_backend = { version = "0.13.0", optional = true }
+egui_wgpu_backend = { version = "0.14.0", optional = true }
 image = { version = "0.23.14", optional = true, default-features = false, features = ["jpeg"] }
 gltf = { version = "0.16.0", optional = true }
-crevice = { version = "0.7.1", optional = true }
+crevice = { version = "0.8.0", optional = true }
 mint = { version = "0.5.7", optional = true }
 
 [dependencies.sdl2]

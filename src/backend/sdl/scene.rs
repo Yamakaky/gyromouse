@@ -1,4 +1,4 @@
-use std::{borrow::Cow, ops::Deref, path::Path};
+use std::{borrow::Cow, path::Path};
 
 use anyhow::Result;
 use cgmath::Matrix4;

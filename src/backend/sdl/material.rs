@@ -200,7 +200,7 @@ impl Material {
                     ),
                 })
             }
-            gltf::image::Source::Uri { uri, mime_type } => todo!(),
+            gltf::image::Source::Uri { .. } => todo!(),
         }
     }
 

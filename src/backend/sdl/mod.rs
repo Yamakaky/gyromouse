@@ -48,8 +48,8 @@ pub struct SDLBackend {
     mouse: Mouse,
     #[cfg(feature = "gui")]
     wgpu_instance: wgpu::Instance,
-    // #[cfg(feature = "gui")]
-    // gui: self::gui::Gui,
+    #[cfg(feature = "gui")]
+    gui: self::gui::Gui,
     #[cfg(feature = "gui")]
     video_subsystem: VideoSubsystem,
 }
@@ -75,15 +75,15 @@ impl SDLBackend {
         let video_subsystem = sdl.video().expect("can't initialize SDL video");
         #[cfg(feature = "gui")]
         let wgpu_instance = wgpu::Instance::new(wgpu::Backends::PRIMARY);
-        //#[cfg(feature = "gui")]
-        //let gui = self::gui::Gui::new(&video_subsystem, &wgpu_instance);
+        #[cfg(feature = "gui")]
+        let gui = self::gui::Gui::new(&video_subsystem, &wgpu_instance);
 
         Ok(Self {
             sdl,
             game_controller_system,
             mouse: Mouse::new(),
-            // #[cfg(feature = "gui")]
-            // gui,
+            #[cfg(feature = "gui")]
+            gui,
             #[cfg(feature = "gui")]
             video_subsystem,
             #[cfg(feature = "gui")]
@@ -238,7 +238,7 @@ impl Backend for SDLBackend {
                             controller.overlay.event(&event);
                         }
 
-                        // self.gui.event(event);
+                        self.gui.event(event);
                     }
                     #[cfg(not(feature = "gui"))]
                     _ => {}
@@ -315,8 +315,8 @@ impl Backend for SDLBackend {
                 )?;
             }
 
-            // #[cfg(feature = "gui")]
-            // self.gui.tick(dt);
+            #[cfg(feature = "gui")]
+            self.gui.tick(dt);
 
             last_tick = now;
             sleep(Duration::from_millis(1));

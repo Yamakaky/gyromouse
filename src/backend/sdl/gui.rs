@@ -4,7 +4,7 @@ use egui::{
     plot::{Line, Plot, Value, Values},
     CtxRef, ScrollArea,
 };
-use egui_sdl2_gl::EguiInputState;
+use egui_sdl2_gl::{EguiStateHandler, FusedCursor};
 use egui_wgpu_backend::{RenderPass, ScreenDescriptor};
 use pollster::block_on;
 use sdl2::{event::Event, video::Window, VideoSubsystem};
@@ -13,7 +13,7 @@ const SCREEN_WIDTH: u32 = 800;
 const SCREEN_HEIGHT: u32 = 600;
 
 pub struct Gui {
-    egui_input_state: EguiInputState,
+    egui_input_state: EguiStateHandler,
     egui_ctx: CtxRef,
     egui_rpass: RenderPass,
     config: wgpu::SurfaceConfiguration,
@@ -31,6 +31,7 @@ pub struct Gui {
     cut_speed: f64,
     cut_recov: f64,
     surface: wgpu::Surface,
+    cursor: FusedCursor,
 }
 
 impl Gui {
@@ -78,16 +79,16 @@ impl Gui {
         let egui_ctx = egui::CtxRef::default();
 
         let native_pixels_per_point = 96f32 / video_subsystem.display_dpi(0).unwrap().0;
+        let (width, height) = window.size();
+        let rect = egui::vec2(width as f32, height as f32) / native_pixels_per_point;
+        let screen_rect = egui::Rect::from_min_size(egui::Pos2::new(0f32, 0f32), rect);
 
-        let egui_input_state = EguiInputState::new(egui::RawInput {
-            screen_rect: None,
-            pixels_per_point: Some(native_pixels_per_point),
-            ..Default::default()
-        });
+        let egui_input_state = EguiStateHandler::new(native_pixels_per_point, screen_rect);
 
         Self {
             egui_input_state,
             egui_ctx,
+            cursor: FusedCursor::new(),
             queue,
             device,
             surface,
@@ -108,14 +109,16 @@ impl Gui {
     }
 
     pub fn event(&mut self, event: Event) {
-        // https://github.com/ArjunNair/egui_sdl2_gl/issues/11
-        if event
-            .get_window_id()
-            .map(|id| id == self.window.id())
-            .unwrap_or(false)
-        {
-            egui_sdl2_gl::input_to_egui(event, &mut self.egui_input_state);
-        }
+        let (width, height) = self.window.size();
+        let rect = egui::vec2(width as f32, height as f32) / self.native_pixels_per_point;
+        let screen_rect = egui::Rect::from_min_size(egui::Pos2::new(0f32, 0f32), rect);
+        egui_sdl2_gl::input_to_egui(
+            &self.window,
+            event,
+            self.native_pixels_per_point,
+            screen_rect,
+            &mut self.egui_input_state,
+        );
     }
 
     pub fn tick(&mut self, dt: Duration) {
@@ -141,7 +144,7 @@ impl Gui {
 
         let ctx = self.egui_ctx.clone();
         egui::CentralPanel::default().show(&ctx, |ui| {
-            ScrollArea::auto_sized().show(ui, |ui| {
+            ScrollArea::vertical().show(ui, |ui| {
                 let mut values = vec![];
                 let sens = if self.accel { self.min_sens } else { self.sens };
                 if self.cut {
@@ -241,7 +244,9 @@ impl Gui {
         if !egui_output.copied_text.is_empty() {
             egui_sdl2_gl::copy_to_clipboard(&mut self.egui_input_state, egui_output.copied_text);
         }
-        sdl2::mouse::Cursor::from_system(egui_sdl2_gl::translate_cursor(egui_output.cursor_icon))
+
+        egui_sdl2_gl::translate_cursor(&mut self.cursor, egui_output.cursor_icon);
+        sdl2::mouse::Cursor::from_system(self.cursor.icon)
             .unwrap()
             .set();
 
