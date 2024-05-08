@@ -1,10 +1,9 @@
-use enigo::{Key, MouseButton};
-use enum_map::{Enum, EnumMap};
+use enigo::{Key, Button};
+use enum_map::{Enum, EnumArray, EnumMap};
 use hid_gamepad_types::JoyKey;
 use std::{
     collections::HashMap,
-    fmt::{Debug, Display},
-    mem::MaybeUninit,
+    fmt::Display,
     time::Duration,
 };
 use std::{convert::TryInto, time::Instant};
@@ -21,7 +20,7 @@ pub enum Action {
 pub enum ExtAction {
     None,
     KeyPress(Key, ClickType),
-    MousePress(MouseButton, ClickType),
+    MousePress(Button, ClickType),
     #[cfg(feature = "vgamepad")]
     GamepadKeyPress(virtual_gamepad::Key, ClickType),
     GyroOn(ClickType),
@@ -140,55 +139,39 @@ pub enum MapKey {
 
 impl MapKey {
     pub fn to_layer(self) -> u8 {
-        <Self as Enum<()>>::to_usize(self)
+        <Self as Enum>::into_usize(self)
             .try_into()
             .expect("error converting MapKey to u8")
     }
 }
 
-const JOYKEY_SIZE: usize = <JoyKey as Enum<()>>::POSSIBLE_VALUES;
-const VIRTKEY_SIZE: usize = <VirtualKey as Enum<()>>::POSSIBLE_VALUES;
+const JOYKEY_SIZE: usize = <JoyKey as Enum>::LENGTH;
+const VIRTKEY_SIZE: usize = <VirtualKey as Enum>::LENGTH;
 const MAP_KEY_SIZE: usize = JOYKEY_SIZE + VIRTKEY_SIZE;
 
-impl<V: Default + Sized> Enum<V> for MapKey {
-    type Array = [V; MAP_KEY_SIZE];
-
-    const POSSIBLE_VALUES: usize = MAP_KEY_SIZE;
-
-    fn slice(array: &Self::Array) -> &[V] {
-        array
-    }
-
-    fn slice_mut(array: &mut Self::Array) -> &mut [V] {
-        array
-    }
+impl Enum for MapKey {
+    const LENGTH: usize  = MAP_KEY_SIZE;
 
     fn from_usize(value: usize) -> Self {
         if value < JOYKEY_SIZE {
-            <JoyKey as Enum<()>>::from_usize(value).into()
+            <JoyKey as Enum>::from_usize(value).into()
         } else if value < MAP_KEY_SIZE {
-            <VirtualKey as Enum<()>>::from_usize(value - JOYKEY_SIZE).into()
+            <VirtualKey as Enum>::from_usize(value - JOYKEY_SIZE).into()
         } else {
             unreachable!("MapKey value cannot be > MAP_KEY_SIZE");
         }
     }
 
-    fn to_usize(self) -> usize {
+    fn into_usize(self) -> usize {
         match self {
-            MapKey::Physical(p) => <JoyKey as Enum<()>>::to_usize(p),
-            MapKey::Virtual(v) => <VirtualKey as Enum<()>>::to_usize(v) + JOYKEY_SIZE,
+            MapKey::Physical(p) => <JoyKey as Enum>::into_usize(p),
+            MapKey::Virtual(v) => <VirtualKey as Enum>::into_usize(v) + JOYKEY_SIZE,
         }
     }
+}
 
-    fn from_function<F: FnMut(Self) -> V>(mut f: F) -> Self::Array {
-        unsafe {
-            let mut out = MaybeUninit::<[MaybeUninit<V>; MAP_KEY_SIZE]>::uninit().assume_init();
-            for (i, out) in out.iter_mut().enumerate() {
-                *out = MaybeUninit::new(f(<Self as Enum<V>>::from_usize(i)));
-            }
-            out.as_ptr().cast::<Self::Array>().read()
-        }
-    }
+impl<T> EnumArray<T> for MapKey{
+    type Array = [T; MAP_KEY_SIZE];
 }
 
 impl From<JoyKey> for MapKey {
@@ -218,8 +201,8 @@ pub struct Buttons {
 impl Buttons {
     pub fn new() -> Self {
         Buttons {
-            bindings: EnumMap::new(),
-            state: EnumMap::new(),
+            bindings: EnumMap::default(),
+            state: EnumMap::default(),
             current_layers: vec![0],
             ext_actions: Vec::new(),
             hold_delay: Duration::from_millis(100),
@@ -236,8 +219,8 @@ impl Buttons {
     }
 
     pub fn tick(&mut self, now: Instant) -> impl Iterator<Item = ExtAction> + '_ {
-        for key in (0..<MapKey as Enum<KeyStatus>>::POSSIBLE_VALUES)
-            .map(<MapKey as Enum<KeyStatus>>::from_usize)
+        for key in (0..<MapKey as Enum>::LENGTH)
+            .map(<MapKey as Enum>::from_usize)
         {
             let binding = self.find_binding(key);
             match self.state[key].status {

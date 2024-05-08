@@ -8,12 +8,7 @@ use anyhow::{bail, Result};
 use cgmath::{vec2, Vector3};
 use hid_gamepad_types::{Acceleration, JoyKey, Motion, RotationSpeed};
 use sdl2::{
-    self,
-    controller::{Axis, Button, GameController},
-    event::Event,
-    keyboard::Keycode,
-    sensor::SensorType,
-    GameControllerSubsystem, Sdl,
+    self, controller::{Axis, Button, GameController}, event::Event, keyboard::Keycode, sensor::SensorType, GameControllerSubsystem, Sdl
 };
 
 use crate::{
@@ -29,7 +24,6 @@ use super::Backend;
 pub struct SDLBackend {
     sdl: Sdl,
     game_controller_system: GameControllerSubsystem,
-    mouse: Mouse,
 }
 
 impl SDLBackend {
@@ -51,7 +45,6 @@ impl SDLBackend {
         Ok(Self {
             sdl,
             game_controller_system,
-            mouse: Mouse::new(),
         })
     }
 }
@@ -144,7 +137,7 @@ impl Backend for SDLBackend {
                             settings.clone(),
                             bindings.clone(),
                             Calibration::empty(),
-                            self.mouse.clone(),
+                            Mouse::new()?,
                         )?;
                         controllers.insert(
                             controller.instance_id(),
@@ -278,5 +271,11 @@ fn sdl_to_sys(button: Button) -> JoyKey {
         Button::DPadDown => JoyKey::Down,
         Button::DPadLeft => JoyKey::Left,
         Button::DPadRight => JoyKey::Right,
+        Button::Misc1 => todo!(),
+        Button::Paddle1 => todo!(),
+        Button::Paddle2 => todo!(),
+        Button::Paddle3 => todo!(),
+        Button::Paddle4 => todo!(),
+        Button::Touchpad => todo!(),
     }
 }

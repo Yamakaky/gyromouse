@@ -3,7 +3,7 @@
 use std::time::{Duration, Instant};
 
 use cgmath::{vec2, AbsDiffEq, Angle, Deg, ElementWise, InnerSpace, Rad, Vector2, Zero};
-use enigo::MouseControllable;
+use enigo::{Axis, Mouse as _};
 
 use crate::{
     config::{settings::Settings, types::RingMode},
@@ -392,7 +392,7 @@ impl Stick for ScrollStick {
                 let delta = (angle - *last).normalize_signed() / settings.stick.scroll.sens + *acc;
                 let delta_rounded = delta.round();
                 *acc = delta - delta_rounded;
-                mouse.enigo().mouse_scroll_y(delta_rounded as i32);
+                mouse.enigo().scroll(delta_rounded as i32, Axis::Vertical).unwrap();
                 *last = angle;
             }
         }

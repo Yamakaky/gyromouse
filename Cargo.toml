@@ -19,23 +19,17 @@ lto = true
 [dependencies]
 anyhow = { version = "1.0", features = ["backtrace"] }
 cgmath = "0.18"
-clap = "3.0.0-beta.2"
-enigo = { git = "https://github.com/Yamakaky/enigo", branch = "xdo-sys" }
-# see https://gitlab.com/KonradBorowski/enum-map/-/issues/20
-enum-map = "0.6"
+clap = { version = "4.0", features = ["cargo", "derive"] }
+enigo = { version = "0.2", features = ["wayland"] }
+enum-map = "2.0"
 hid-gamepad-types = { git = "https://github.com/Yamakaky/joy" }
 hid-gamepad = { git = "https://github.com/Yamakaky/joy", optional = true }
 joycon = { git = "https://github.com/Yamakaky/joy", optional = true }
 nom = "7.0.0"
-nom-supreme = "0.6.0"
-human-panic = "1.0.3"
+nom-supreme = "0.8"
+human-panic = "2.0"
 virtual-gamepad = { git = "https://github.com/Yamakaky/virtual-gamepad", optional = true }
-
-[dependencies.sdl2]
-git = "https://github.com/Yamakaky/rust-sdl2"
-branch = "sensor-api"
-optional = true 
-default-features = false
+sdl2 = { version = "0.36", features = ["hidapi"], optional = true }
 
 [package.metadata.vcpkg]
 dependencies = ["sdl2"]

@@ -35,7 +35,7 @@ pub struct JSMAction {
 #[derive(Debug, Copy, Clone)]
 pub enum ActionType {
     Key(enigo::Key),
-    Mouse(enigo::MouseButton),
+    Mouse(enigo::Button),
     Special(SpecialKey),
     #[cfg(feature = "vgamepad")]
     Gamepad(virtual_gamepad::Key),

@@ -1,7 +1,7 @@
 use std::ops::AddAssign;
 
 use cgmath::{vec2, Deg, Vector2, Zero};
-use enigo::{Enigo, MouseControllable};
+use enigo::{Coordinate, Enigo, Mouse as _};
 
 use crate::config::settings::MouseSettings;
 
@@ -42,23 +42,18 @@ pub struct Mouse {
     error_accumulator: Vector2<f64>,
 }
 
-impl Clone for Mouse {
-    fn clone(&self) -> Self {
-        Self { ..Self::new() }
-    }
-}
 
 impl Mouse {
-    pub fn new() -> Self {
+    pub fn new() -> anyhow::Result<Self> {
         #[allow(unused_mut)]
-        let mut enigo = Enigo::new();
+        let mut enigo = Enigo::new(&enigo::Settings::default())?;
         // Lower delay for xdo, see #1
         #[cfg(target_os = "linux")]
         enigo.set_delay(100);
-        Mouse {
+        Ok(Mouse {
             enigo,
             error_accumulator: Vector2::zero(),
-        }
+        })
     }
 
     // mouse movement is pixel perfect, so we keep track of the error.
@@ -75,13 +70,13 @@ impl Mouse {
         if let Some(rounded) = rounded.cast::<i32>() {
             if rounded != Vector2::zero() {
                 // In enigo, +y is toward the bottom
-                self.enigo.mouse_move_relative(rounded.x, rounded.y);
+                self.enigo.move_mouse(rounded.x, rounded.y, Coordinate::Rel).unwrap();
             }
         }
     }
 
     pub fn mouse_move_absolute_pixel(&mut self, offset: Vector2<i32>) {
-        self.enigo.mouse_move_to(offset.x, offset.y);
+        self.enigo.move_mouse(offset.x, offset.y, Coordinate::Abs).unwrap();
     }
 
     pub fn enigo(&mut self) -> &mut Enigo {

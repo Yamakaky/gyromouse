@@ -464,7 +464,7 @@ fn keyboardkey(input: Input) -> IRes<'_, enigo::Key> {
     use enigo::Key::*;
     let char_parse = |input| {
         satisfy(|c| is_alphanumeric(c as u8))(input)
-            .map(|(i, x)| (i, Layout(x)))
+            .map(|(i, x)| (i, Unicode(x)))
             .map_err(|_: nom::Err<ErrorTree<Input<'_>>>| {
                 nom::Err::Error(ErrorTree::from_tag(input, "a keyboard letter"))
             })
@@ -517,8 +517,8 @@ fn keyboardkey(input: Input) -> IRes<'_, enigo::Key> {
     ))(input)
 }
 
-fn mousekey(input: Input) -> IRes<'_, enigo::MouseButton> {
-    use enigo::MouseButton::*;
+fn mousekey(input: Input) -> IRes<'_, enigo::Button> {
+    use enigo::Button::*;
     let key_parse = |key, tag| value(key, tag_no_case(tag));
     alt((
         key_parse(Left, "LMouse"),

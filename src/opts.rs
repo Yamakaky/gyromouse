@@ -1,26 +1,22 @@
 use std::{path::PathBuf, str::FromStr};
 
-use clap::Clap;
+use clap::{Parser, ValueEnum};
 
 /// Input mapper from gamepad keypress and movement to mouse and keyboard.
 ///
 /// See <https://github.com/Yamakaky/gyromouse/blob/master/README.md> for more
 /// information about features and configuration file format.
-#[derive(Debug, Clap)]
-#[clap(version = clap::crate_version!())]
-#[clap(setting = clap::AppSettings::ColoredHelp)]
+#[derive(Debug, Parser)]
+#[command(author, version, about)]
 pub struct Opts {
     /// Force the use of a specific backend for gamepad access.
-    #[clap(short, long)]
-    #[clap(setting = clap::ArgSettings::Hidden)]
-    #[clap(possible_values = &["sdl2", "hidapi"])]
+    #[arg(short, long)]
     pub backend: Option<Backend>,
-    #[clap(subcommand)]
+    #[command(subcommand)]
     pub cmd: Option<Cmd>,
 }
 
-#[derive(Debug, Clap)]
-#[clap(setting = clap::AppSettings::ColoredHelp)]
+#[derive(Debug, Copy, Clone, ValueEnum)]
 pub enum Backend {
     #[cfg(feature = "sdl2")]
     Sdl,
@@ -28,13 +24,12 @@ pub enum Backend {
     Hid,
 }
 
-#[derive(Debug, Clap)]
-#[clap(setting = clap::AppSettings::ColoredHelp)]
+#[derive(Debug, Parser)]
 pub enum Cmd {
     /// Validate the syntax of a configuration file.
     Validate(Run),
     /// Compute the value of REAL_WORLD_CALIBRATION.
-    #[clap(setting = clap::AppSettings::Hidden)]
+    #[command(hide = true)]
     FlickCalibrate,
     /// Run the program using the specified configuration file.
     Run(Run),
@@ -42,8 +37,7 @@ pub enum Cmd {
     List,
 }
 
-#[derive(Debug, Clap)]
-#[clap(setting = clap::AppSettings::ColoredHelp)]
+#[derive(Debug, Parser)]
 pub struct Run {
     /// Configuration file to use.
     pub mapping_file: PathBuf,
