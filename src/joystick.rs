@@ -392,7 +392,10 @@ impl Stick for ScrollStick {
                 let delta = (angle - *last).normalize_signed() / settings.stick.scroll.sens + *acc;
                 let delta_rounded = delta.round();
                 *acc = delta - delta_rounded;
-                mouse.enigo().scroll(delta_rounded as i32, Axis::Vertical).unwrap();
+                mouse
+                    .enigo()
+                    .scroll(delta_rounded as i32, Axis::Vertical)
+                    .unwrap();
                 *last = angle;
             }
         }

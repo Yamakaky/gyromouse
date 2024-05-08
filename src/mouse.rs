@@ -42,7 +42,6 @@ pub struct Mouse {
     error_accumulator: Vector2<f64>,
 }
 
-
 impl Mouse {
     pub fn new() -> anyhow::Result<Self> {
         #[allow(unused_mut)]
@@ -70,13 +69,17 @@ impl Mouse {
         if let Some(rounded) = rounded.cast::<i32>() {
             if rounded != Vector2::zero() {
                 // In enigo, +y is toward the bottom
-                self.enigo.move_mouse(rounded.x, rounded.y, Coordinate::Rel).unwrap();
+                self.enigo
+                    .move_mouse(rounded.x, rounded.y, Coordinate::Rel)
+                    .unwrap();
             }
         }
     }
 
     pub fn mouse_move_absolute_pixel(&mut self, offset: Vector2<i32>) {
-        self.enigo.move_mouse(offset.x, offset.y, Coordinate::Abs).unwrap();
+        self.enigo
+            .move_mouse(offset.x, offset.y, Coordinate::Abs)
+            .unwrap();
     }
 
     pub fn enigo(&mut self) -> &mut Enigo {

@@ -8,7 +8,12 @@ use anyhow::{bail, Result};
 use cgmath::{vec2, Vector3};
 use hid_gamepad_types::{Acceleration, JoyKey, Motion, RotationSpeed};
 use sdl2::{
-    self, controller::{Axis, Button, GameController}, event::Event, keyboard::Keycode, sensor::SensorType, GameControllerSubsystem, Sdl
+    self,
+    controller::{Axis, Button, GameController},
+    event::Event,
+    keyboard::Keycode,
+    sensor::SensorType,
+    GameControllerSubsystem, Sdl,
 };
 
 use crate::{

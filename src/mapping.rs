@@ -1,11 +1,7 @@
-use enigo::{Key, Button};
+use enigo::{Button, Key};
 use enum_map::{Enum, EnumArray, EnumMap};
 use hid_gamepad_types::JoyKey;
-use std::{
-    collections::HashMap,
-    fmt::Display,
-    time::Duration,
-};
+use std::{collections::HashMap, fmt::Display, time::Duration};
 use std::{convert::TryInto, time::Instant};
 
 use crate::ClickType;
@@ -150,7 +146,7 @@ const VIRTKEY_SIZE: usize = <VirtualKey as Enum>::LENGTH;
 const MAP_KEY_SIZE: usize = JOYKEY_SIZE + VIRTKEY_SIZE;
 
 impl Enum for MapKey {
-    const LENGTH: usize  = MAP_KEY_SIZE;
+    const LENGTH: usize = MAP_KEY_SIZE;
 
     fn from_usize(value: usize) -> Self {
         if value < JOYKEY_SIZE {
@@ -170,7 +166,7 @@ impl Enum for MapKey {
     }
 }
 
-impl<T> EnumArray<T> for MapKey{
+impl<T> EnumArray<T> for MapKey {
     type Array = [T; MAP_KEY_SIZE];
 }
 
@@ -219,9 +215,7 @@ impl Buttons {
     }
 
     pub fn tick(&mut self, now: Instant) -> impl Iterator<Item = ExtAction> + '_ {
-        for key in (0..<MapKey as Enum>::LENGTH)
-            .map(<MapKey as Enum>::from_usize)
-        {
+        for key in (0..<MapKey as Enum>::LENGTH).map(<MapKey as Enum>::from_usize) {
             let binding = self.find_binding(key);
             match self.state[key].status {
                 KeyStatus::Down => {

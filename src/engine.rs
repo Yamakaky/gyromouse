@@ -111,16 +111,28 @@ impl Engine {
                 ExtAction::GyroOn(ClickType::Click) | ExtAction::GyroOff(ClickType::Click) => {
                     eprintln!("Warning: event type Click has no effect on gyro on/off");
                 }
-                ExtAction::KeyPress(c, ClickType::Click) => self.mouse.enigo().key(c, Direction::Click)?,
-                ExtAction::KeyPress(c, ClickType::Press) => self.mouse.enigo().key(c, Direction::Press)?,
-                ExtAction::KeyPress(c, ClickType::Release) => self.mouse.enigo().key(c, Direction::Release)?,
+                ExtAction::KeyPress(c, ClickType::Click) => {
+                    self.mouse.enigo().key(c, Direction::Click)?
+                }
+                ExtAction::KeyPress(c, ClickType::Press) => {
+                    self.mouse.enigo().key(c, Direction::Press)?
+                }
+                ExtAction::KeyPress(c, ClickType::Release) => {
+                    self.mouse.enigo().key(c, Direction::Release)?
+                }
                 ExtAction::KeyPress(_, ClickType::Toggle) => {
                     // TODO: Implement key press toggle
                     eprintln!("Warning: key press toggle is not implemented");
                 }
-                ExtAction::MousePress(c, ClickType::Click) => self.mouse.enigo().button(c, Direction::Click)?,
-                ExtAction::MousePress(c, ClickType::Press) => self.mouse.enigo().button(c, Direction::Press)?,
-                ExtAction::MousePress(c, ClickType::Release) => self.mouse.enigo().button(c, Direction::Release)?,
+                ExtAction::MousePress(c, ClickType::Click) => {
+                    self.mouse.enigo().button(c, Direction::Click)?
+                }
+                ExtAction::MousePress(c, ClickType::Press) => {
+                    self.mouse.enigo().button(c, Direction::Press)?
+                }
+                ExtAction::MousePress(c, ClickType::Release) => {
+                    self.mouse.enigo().button(c, Direction::Release)?
+                }
                 ExtAction::MousePress(_, ClickType::Toggle) => {
                     // TODO: Implement mouse click toggle
                     eprintln!("Warning: mouse click toggle is not implemented");

@@ -35,10 +35,12 @@ pub enum ClickType {
 
 fn main() {
     // https://github.com/rust-cli/human-panic/issues/77
-    human_panic::setup_panic!(human_panic::Metadata::new(env!("CARGO_PKG_NAME"), env!("CARGO_PKG_VERSION"))
-        .authors(env!("CARGO_PKG_AUTHORS").replace(":", ", "))
-        .homepage(env!("CARGO_PKG_REPOSITORY"))
-    );
+    human_panic::setup_panic!(human_panic::Metadata::new(
+        env!("CARGO_PKG_NAME"),
+        env!("CARGO_PKG_VERSION")
+    )
+    .authors(env!("CARGO_PKG_AUTHORS").replace(":", ", "))
+    .homepage(env!("CARGO_PKG_REPOSITORY")));
 
     if let Err(e) = do_main() {
         eprintln!("Error: {:?}", e);
