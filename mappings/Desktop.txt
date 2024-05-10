@@ -16,8 +16,9 @@ DOWN = DOWN
 # Mouse Buttons and wheel
 R = FMOUSE
 L = BMOUSE
-ZR = LMOUSE LMOUSE
-ZL = RMOUSE RMOUSE
+ZR = RMOUSE RMOUSE
+ZL = LMOUSE LMOUSE
+
 L3 = MMOUSE
 LEFT_STICK_MODE = AIM
 LLEFT = SCROLLUP
@@ -25,11 +26,12 @@ LRIGHT = SCROLLDOWN
 SCROLL_SENS = 60
 
 # Button pad is common buttons
-S = ENTER
-S,S = ESC
-W = SPACE
-N = BACKSPACE
-E = GYRO_OFF
+E = ENTER
+E,E = ESC
+W = !LMOUSE
+N = SPACE
+N,N = BACKSPACE
+S = GYRO_OFF
 
 + = LALT\ !TAB\           # Task view
 - = CONTROL\ LWINDOWS\ O\   # On Screen Keyboard

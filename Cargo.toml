@@ -30,11 +30,13 @@ nom-supreme = "0.8"
 human-panic = "2.0"
 virtual-gamepad = { git = "https://github.com/Yamakaky/virtual-gamepad", optional = true }
 sdl2 = { version = "0.36", features = ["hidapi"], optional = true }
+env_logger = "0.11.3"
 
 [package.metadata.vcpkg]
+git = "https://github.com/microsoft/vcpkg"
+# Latest master
+rev = "cbf4a6641528cee6f172328984576f51698de726"
 dependencies = ["sdl2"]
-git = "https://github.com/Yamakaky/vcpkg"
-branch = "sdl-hidapi"
 
 [package.metadata.vcpkg.target]
 x86_64-pc-windows-msvc = { triplet = "x64-windows-static-md" }

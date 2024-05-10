@@ -44,13 +44,8 @@ pub struct Mouse {
 
 impl Mouse {
     pub fn new() -> anyhow::Result<Self> {
-        #[allow(unused_mut)]
-        let mut enigo = Enigo::new(&enigo::Settings::default())?;
-        // Lower delay for xdo, see #1
-        #[cfg(target_os = "linux")]
-        enigo.set_delay(100);
         Ok(Mouse {
-            enigo,
+            enigo: Enigo::new(&enigo::Settings::default())?,
             error_accumulator: Vector2::zero(),
         })
     }
